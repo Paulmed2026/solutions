@@ -1,23 +1,680 @@
+# Dynamics 365 Solution Design Document
 
-Display Name: Promotion Header
-Plural Name: Promotion Headers
-Logical Name: prm_promotionheader
-Primary Name Column: prm_name
+## Sales Group Promotions Display and Maintenance
 
+### 1. Document Purpose
 
+This document defines the proposed Dynamics 365 solution for managing Promotions at the Sales Group level and displaying those Promotions on all related Account records.
 
+The solution is designed to replace spreadsheet-based promotion tracking with a structured, scalable, and visually appealing Dataverse-based model using:
 
+* Standard Dataverse tables
+* Standard model-driven forms for create/edit
+* A Custom Page for display only
+* Reusable embedded experience on both Sales Group and Account forms
 
+---
 
-Display Name	Logical Name
-Promotion Name	prm_name
-Sales Group	prm_salesgroupid
-Activity	prm_activity
-Buy Period	prm_buyperiod
-Promotion Start Date	prm_promotionstartdate
-Promotion End Date	prm_promotionenddate
-Scan Percent	prm_scanpercent
-Action	prm_action
-Status	prm_status
-Header Comment	prm_headercomment
-Display Order
+## 2. Business Requirement Summary
+
+### Current State
+
+Promotions are currently managed in spreadsheets. Each promotion contains:
+
+* A header-level campaign section
+* Multiple product/detail rows
+
+Users want a more manageable experience inside Dynamics 365.
+
+### Desired Future State
+
+* Promotions should be associated to a Sales Group
+* All Accounts under that Sales Group should display those Promotions
+* Users should be able to add new Promotions from the Sales Group record
+* Users may also initiate Promotion creation while on an Account record, but the Promotion must still belong to the Sales Group
+* The Promotions display should be visually polished and easy to consume
+* Editing should occur in standard forms, not in the Custom Page
+
+---
+
+## 3. Recommended Solution Approach
+
+### Recommended Pattern
+
+* **Sales Group owns Promotion Header records**
+* **Promotion Header owns Promotion Line records**
+* **Account inherits Promotion visibility through its related Sales Group**
+* **Custom Page is used only for display**
+* **Standard forms are used for create/edit**
+
+### Why this approach
+
+This approach:
+
+* avoids data duplication
+* keeps a single source of truth
+* simplifies maintenance
+* supports a beautiful UX without sacrificing supportability
+* reduces complexity versus inline editing on a custom page
+
+---
+
+## 4. Solution Scope
+
+### In Scope
+
+* Create Promotion Header table
+* Create Promotion Line table
+* Relate Promotions to Sales Group
+* Display Promotions on Sales Group form
+* Display Promotions on Account form by Sales Group inheritance
+* Use Custom Page for display only
+* Use standard forms for create/edit
+* Allow users to open Promotion records from display page
+* Allow users to create new Promotion records from display page
+
+### Out of Scope for Phase 1
+
+* Inline editing in the Custom Page
+* Spreadsheet-style inline row editing
+* Product master integration
+* Approval workflows
+* account-level exceptions / assignment table
+* cloning logic
+* import automation
+
+---
+
+## 5. High-Level Architecture
+
+### Entity Relationship Model
+
+* **Sales Group** 1:N **Account**
+* **Sales Group** 1:N **Promotion Header**
+* **Promotion Header** 1:N **Promotion Line**
+
+### Functional Flow
+
+1. User opens a Sales Group or Account
+2. Embedded Custom Page loads in Promotions tab
+3. If on Sales Group, page reads Promotions directly for that Sales Group
+4. If on Account, page reads Account’s Sales Group and then loads that group’s Promotions
+5. User clicks **Open Promotion** to edit using standard form
+6. User clicks **New Promotion** to open standard Promotion Header form with Sales Group prefilled
+
+---
+
+## 6. Tables Involved
+
+### 6.1 Sales Group
+
+Existing parent table representing the commercial grouping.
+
+Key required field used by this solution:
+
+* Sales Group primary name field (existing)
+
+### 6.2 Account
+
+Standard Account table.
+
+Required field used by this solution:
+
+* `prm_salesgroupid` (Lookup to Sales Group)
+
+### 6.3 Promotion Header
+
+New custom table to store campaign-level promotion data.
+
+### 6.4 Promotion Line
+
+New custom table to store line/product-level data beneath each Promotion Header.
+
+---
+
+## 7. Detailed Table Design
+
+## 7.1 Promotion Header Table
+
+### Table Definition
+
+* Display Name: Promotion Header
+* Plural Name: Promotion Headers
+* Schema Name: `prm_PromotionHeader`
+* Logical Name: `prm_promotionheader`
+* Primary Name Column: `prm_name`
+
+### Columns
+
+| Display Name            | Logical Name                | Data Type                     | Required | Notes                                      |
+| ----------------------- | --------------------------- | ----------------------------- | -------- | ------------------------------------------ |
+| Promotion Name          | `prm_name`                  | Single Line of Text           | Yes      | Primary name                               |
+| Sales Group             | `prm_salesgroupid`          | Lookup                        | Yes      | Lookup to Sales Group                      |
+| Promotion Code          | `prm_promotioncode`         | Single Line of Text           | No       | Optional business key                      |
+| Campaign Month          | `prm_campaignmonth`         | Single Line of Text or Choice | No       | Example January                            |
+| Campaign Year           | `prm_campaignyear`          | Whole Number                  | No       | Example 2026                               |
+| Activity                | `prm_activity`              | Single Line of Text           | Yes      | Campaign activity                          |
+| Buy Period              | `prm_buyperiod`             | Single Line of Text           | No       | Example NA or date text                    |
+| Promotion Start Date    | `prm_promotionstartdate`    | Date Only                     | Yes      | Start of promotion                         |
+| Promotion End Date      | `prm_promotionenddate`      | Date Only                     | Yes      | End of promotion                           |
+| Promotional Period Text | `prm_promotionalperiodtext` | Single Line of Text           | No       | Legacy display string                      |
+| Scan Percent            | `prm_scanpercent`           | Decimal Number                | No       | Example 5.00                               |
+| Action                  | `prm_action`                | Single Line of Text           | No       | Example NA                                 |
+| Promotion Type          | `prm_promotiontype`         | Choice                        | No       | Optional classification                    |
+| Status                  | `prm_status`                | Choice                        | Yes      | Draft, Upcoming, Active, Expired, Inactive |
+| Header Comment          | `prm_headercomment`         | Multiple Lines of Text        | No       | Header-level note                          |
+| Market                  | `prm_market`                | Single Line of Text           | No       | Example NZ                                 |
+| Region                  | `prm_region`                | Single Line of Text           | No       | Optional                                   |
+| Display Order           | `prm_displayorder`          | Whole Number                  | No       | Card sorting                               |
+| Active Flag             | `prm_activeflag`            | Yes/No                        | No       | Optional filter helper                     |
+| Notes                   | `prm_notes`                 | Multiple Lines of Text        | No       | Admin notes                                |
+| External Reference      | `prm_externalreference`     | Single Line of Text           | No       | Import mapping                             |
+| Source File Name        | `prm_sourcefilename`        | Single Line of Text           | No       | Spreadsheet source                         |
+| Last Imported On        | `prm_lastimportedon`        | Date and Time                 | No       | Optional                                   |
+
+### Minimum Phase 1 Columns
+
+* `prm_name`
+* `prm_salesgroupid`
+* `prm_activity`
+* `prm_buyperiod`
+* `prm_promotionstartdate`
+* `prm_promotionenddate`
+* `prm_scanpercent`
+* `prm_action`
+* `prm_status`
+* `prm_headercomment`
+* `prm_displayorder`
+
+---
+
+## 7.2 Promotion Line Table
+
+### Table Definition
+
+* Display Name: Promotion Line
+* Plural Name: Promotion Lines
+* Schema Name: `prm_PromotionLine`
+* Logical Name: `prm_promotionline`
+* Primary Name Column: `prm_name`
+
+### Columns
+
+| Display Name        | Logical Name            | Data Type                     | Required | Notes                        |
+| ------------------- | ----------------------- | ----------------------------- | -------- | ---------------------------- |
+| Promotion Line Name | `prm_name`              | Single Line of Text           | Yes      | Primary name                 |
+| Promotion Header    | `prm_promotionheaderid` | Lookup                        | Yes      | Lookup to Promotion Header   |
+| Product Code        | `prm_productcode`       | Single Line of Text           | Yes      | Code from source sheet       |
+| Product Name        | `prm_productname`       | Single Line of Text           | Yes      | Product description          |
+| Discount Percent    | `prm_discountpercent`   | Decimal Number                | No       | Example 10.00                |
+| Discount Text       | `prm_discounttext`      | Single Line of Text           | No       | Optional alternative display |
+| Comment             | `prm_comment`           | Single Line of Text           | No       | Example Featured             |
+| Line Description    | `prm_linedescription`   | Multiple Lines of Text        | No       | Optional                     |
+| Sort Order          | `prm_sortorder`         | Whole Number                  | No       | Controls line sequence       |
+| Featured            | `prm_featured`          | Yes/No                        | No       | Optional highlight flag      |
+| Product Category    | `prm_productcategory`   | Single Line of Text or Choice | No       | Optional                     |
+| External Item ID    | `prm_externalitemid`    | Single Line of Text           | No       | Optional                     |
+| UOM                 | `prm_uom`               | Single Line of Text           | No       | Optional                     |
+| Active Flag         | `prm_activeflag`        | Yes/No                        | No       | Optional                     |
+| Notes               | `prm_notes`             | Multiple Lines of Text        | No       | Optional                     |
+
+### Minimum Phase 1 Columns
+
+* `prm_name`
+* `prm_promotionheaderid`
+* `prm_productcode`
+* `prm_productname`
+* `prm_discountpercent`
+* `prm_comment`
+* `prm_sortorder`
+* `prm_featured`
+
+---
+
+## 8. Relationships
+
+### 8.1 Sales Group to Account
+
+* Relationship: 1:N
+* Account field: `prm_salesgroupid`
+* Purpose: determines which group an Account belongs to
+
+### 8.2 Sales Group to Promotion Header
+
+* Relationship: 1:N
+* Promotion Header field: `prm_salesgroupid`
+* Purpose: Promotion ownership
+
+### 8.3 Promotion Header to Promotion Line
+
+* Relationship: 1:N
+* Promotion Line field: `prm_promotionheaderid`
+* Purpose: line item detail beneath a Promotion
+
+---
+
+## 9. Choice Fields
+
+## 9.1 Promotion Status
+
+Field: `prm_status`
+
+Recommended values:
+
+* Draft = 100000000
+* Upcoming = 100000001
+* Active = 100000002
+* Expired = 100000003
+* Inactive = 100000004
+
+## 9.2 Promotion Type
+
+Field: `prm_promotiontype`
+
+Recommended values:
+
+* Catalogue = 100000000
+* Hero Spot = 100000001
+* Seasonal = 100000002
+* Discount Offer = 100000003
+* Bundle = 100000004
+* Featured Product = 100000005
+* Other = 100000006
+
+---
+
+## 10. Naming Standards
+
+### Promotion Header Name
+
+Recommended pattern for `prm_name`:
+`[Sales Group] | [Campaign Month] [Campaign Year] | [Activity]`
+
+Example:
+`CWH NZ | January 2026 | Jan Catalogue Hero Spot`
+
+### Promotion Line Name
+
+Recommended pattern for `prm_name`:
+`[Product Code] - [Product Name]`
+
+Example:
+`HC90 - Inner Health Plus 90 Caps`
+
+---
+
+## 11. Forms Design
+
+## 11.1 Promotion Header Main Form
+
+### Purpose
+
+Primary create/edit experience.
+
+### Suggested sections
+
+#### General
+
+* Promotion Name
+* Sales Group
+* Status
+* Promotion Type
+* Campaign Month
+* Campaign Year
+
+#### Promotion Details
+
+* Activity
+* Buy Period
+* Promotion Start Date
+* Promotion End Date
+* Scan Percent
+* Action
+* Header Comment
+
+#### Notes
+
+* Notes
+* Market
+* Region
+* Display Order
+
+#### Lines
+
+* Subgrid of Promotion Lines
+
+### Behavior
+
+Users manage the Promotion Header and related Promotion Lines here.
+
+---
+
+## 11.2 Promotion Line Form
+
+### Purpose
+
+Create/edit line items.
+
+### Suggested fields
+
+* Promotion Line Name
+* Promotion Header
+* Product Code
+* Product Name
+* Discount Percent
+* Comment
+* Sort Order
+* Featured
+* Notes
+
+---
+
+## 12. Custom Page Design
+
+### Purpose
+
+Display Promotions in a visually attractive way on Sales Group and Account forms.
+
+### Rule
+
+The Custom Page is display-only.
+All create/edit activity occurs in the standard forms.
+
+### Embedded Locations
+
+* Sales Group form tab: Promotions
+* Account form tab: Promotions
+
+### Display Behavior
+
+#### If page is opened from Sales Group
+
+* read current Sales Group ID
+* display Promotion Headers where `prm_salesgroupid` = current group
+
+#### If page is opened from Account
+
+* read current Account record
+* get Account.`prm_salesgroupid`
+* display Promotion Headers where `prm_salesgroupid` = Account’s Sales Group
+
+### UI Recommendations
+
+* Card-based Promotion display
+* status badge
+* date range visible
+* top-level filter buttons: All, Active, Upcoming, Expired
+* line preview beneath each header
+* action buttons on each card
+
+### Buttons on Custom Page
+
+#### Top Actions
+
+* New Promotion
+* Refresh
+
+#### Card Actions
+
+* Open Promotion
+
+---
+
+## 13. Standard Form Integration
+
+### New Promotion Behavior
+
+When user clicks **New Promotion**:
+
+* open standard Promotion Header main form
+* prepopulate `prm_salesgroupid`
+
+If launched from Account:
+
+* resolve Account Sales Group first
+* prepopulate Promotion Header Sales Group with that value
+
+### Open Promotion Behavior
+
+When user clicks **Open Promotion**:
+
+* open Promotion Header main form for selected record
+* user edits header and line items there
+
+---
+
+## 14. Automation Recommendations
+
+### Phase 1
+
+No complex automation is required for basic functionality.
+
+### Recommended simple automation
+
+Auto-maintain `prm_status` based on date rules:
+
+* if today < start date → Upcoming
+* if today between start and end → Active
+* if today > end date → Expired
+
+This can be implemented using:
+
+* Power Automate cloud flow
+* plugin if real-time enforcement is later required
+
+### Optional naming automation
+
+Auto-build:
+
+* Promotion Header `prm_name`
+* Promotion Line `prm_name`
+
+---
+
+## 15. Security Considerations
+
+### Security needs
+
+Define who can:
+
+* view Promotions
+* create Promotions
+* edit Promotions
+* edit Promotion Lines
+
+### Recommended pattern
+
+* broader view access for users who need to consume Promotions
+* create/edit access for Sales/Marketing/power users only
+
+### Tables needing security consideration
+
+* Promotion Header
+* Promotion Line
+
+---
+
+## 16. Data Migration Considerations
+
+Since Promotions are currently in spreadsheets, migration may be needed.
+
+### Recommended migration approach
+
+1. separate spreadsheet data into:
+
+   * Promotion Header rows
+   * Promotion Line rows
+2. load Promotion Headers first
+3. load Promotion Lines second
+4. map lines to the correct Promotion Header
+
+### Suggested import helpers
+
+Useful fields for migration:
+
+* `prm_externalreference`
+* `prm_sourcefilename`
+* `prm_lastimportedon`
+
+---
+
+## 17. Reporting and User Experience Considerations
+
+### Filters to include on Custom Page
+
+* All
+* Active
+* Upcoming
+* Expired
+
+### Sort recommendations
+
+Promotion Header:
+
+* Display Order ascending
+* then Promotion Start Date descending
+
+Promotion Line:
+
+* Sort Order ascending
+
+### UX notes
+
+The Custom Page should emphasize readability and polish, not editing.
+This improves adoption while keeping the maintenance model simple.
+
+---
+
+## 18. Risks and Mitigations
+
+### Risk 1: Overcomplicating the Custom Page
+
+Mitigation:
+
+* keep it display-only
+* launch standard forms for maintenance
+
+### Risk 2: Missing Sales Group on Account
+
+Mitigation:
+
+* make Account Sales Group field required where business permits
+* validate before showing inherited promotions
+
+### Risk 3: Spreadsheet-style expectations
+
+Mitigation:
+
+* train users on header/line structure
+* show a familiar grouped layout in the Custom Page
+
+### Risk 4: Status becoming inaccurate
+
+Mitigation:
+
+* add simple scheduled or triggered automation for status maintenance
+
+---
+
+## 19. Phased Delivery Plan
+
+### Phase 1
+
+* create Promotion Header table
+* create Promotion Line table
+* create relationships
+* build standard forms
+* build display-only Custom Page
+* embed page on Sales Group form
+* embed page on Account form
+* wire New Promotion and Open Promotion actions
+
+### Phase 2
+
+* add status automation
+* improve styling and filters
+* add import support
+* add clone promotion capability if needed
+
+### Phase 3
+
+* optional product lookup integration
+* optional approval workflow
+* optional analytics/dashboarding
+
+---
+
+## 20. Final Recommendation
+
+The recommended enterprise design is:
+
+* **Sales Group owns Promotions**
+* **Promotion Header stores campaign-level details**
+* **Promotion Line stores item-level details**
+* **Accounts display Promotions by inheriting from Sales Group**
+* **Custom Page is used only for beautiful display**
+* **Standard forms remain the edit experience**
+
+This design is scalable, clean, supportable, and aligned with the user’s desire for a polished display without creating unnecessary complexity.
+
+---
+
+## 21. Build Checklist
+
+### Data Model
+
+* [ ] confirm Sales Group table
+* [ ] confirm Account Sales Group lookup
+* [ ] create Promotion Header table
+* [ ] create Promotion Line table
+* [ ] create relationships
+
+### Forms
+
+* [ ] build Promotion Header form
+* [ ] build Promotion Line form
+* [ ] add Promotion Line subgrid to Promotion Header form
+
+### Custom Page
+
+* [ ] create display-only Custom Page
+* [ ] configure Sales Group context logic
+* [ ] configure Account context logic
+* [ ] add filters
+* [ ] add New Promotion button
+* [ ] add Open Promotion button
+
+### Embedding
+
+* [ ] embed on Sales Group form
+* [ ] embed on Account form
+* [ ] test role-based access
+
+### Testing
+
+* [ ] test create from Sales Group
+* [ ] test create from Account
+* [ ] test display inheritance on Account
+* [ ] test line item visibility
+* [ ] test filtering
+
+---
+
+## 22. Assumptions
+
+* Sales Group table already exists
+* Account can be related to one Sales Group
+* Promotions are owned by Sales Group, not directly by Account
+* Users accept opening standard forms for maintenance
+* Custom Page is intended for display only
+
+---
+
+## 23. Open Questions for Final Build
+
+* What is the exact logical name of the Sales Group table?
+* Does Account already have a Sales Group lookup?
+* Should users be allowed to create Promotions from Account form, or only view/open them there?
+* Is `Promotion Type` required in phase 1?
+* Is automated status maintenance needed immediately or later?
+* Will historical spreadsheet data be imported during phase 1?
