@@ -1,0 +1,23 @@
+
+Display Name: Promotion Header
+Plural Name: Promotion Headers
+Logical Name: prm_promotionheader
+Primary Name Column: prm_name
+
+
+
+
+
+
+Display Name	Logical Name
+Promotion Name	prm_name
+Sales Group	prm_salesgroupid
+Activity	prm_activity
+Buy Period	prm_buyperiod
+Promotion Start Date	prm_promotionstartdate
+Promotion End Date	prm_promotionenddate
+Scan Percent	prm_scanpercent
+Action	prm_action
+Status	prm_status
+Header Comment	prm_headercomment
+Display Order
