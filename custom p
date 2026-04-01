@@ -1,709 +1,910 @@
-
-
-
-Draft
-100,000,000
-Upcoming
-100,000,001
-Active
-100,000,002
-Expired
-100,000,003
-Inactive
-100,000,004
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Dynamics 365 Solution Design Document
-
-## Sales Group Promotions Display and Maintenance
-
-### 1. Document Purpose
-
-This document defines the proposed Dynamics 365 solution for managing Promotions at the Sales Group level and displaying those Promotions on all related Account records.
-
-The solution is designed to replace spreadsheet-based promotion tracking with a structured, scalable, and visually appealing Dataverse-based model using:
-
-* Standard Dataverse tables
-* Standard model-driven forms for create/edit
-* A Custom Page for display only
-* Reusable embedded experience on both Sales Group and Account forms
-
----
-
-## 2. Business Requirement Summary
-
-### Current State
-
-Promotions are currently managed in spreadsheets. Each promotion contains:
-
-* A header-level campaign section
-* Multiple product/detail rows
-
-Users want a more manageable experience inside Dynamics 365.
-
-### Desired Future State
-
-* Promotions should be associated to a Sales Group
-* All Accounts under that Sales Group should display those Promotions
-* Users should be able to add new Promotions from the Sales Group record
-* Users may also initiate Promotion creation while on an Account record, but the Promotion must still belong to the Sales Group
-* The Promotions display should be visually polished and easy to consume
-* Editing should occur in standard forms, not in the Custom Page
-
----
-
-## 3. Recommended Solution Approach
-
-### Recommended Pattern
-
-* **Sales Group owns Promotion Header records**
-* **Promotion Header owns Promotion Line records**
-* **Account inherits Promotion visibility through its related Sales Group**
-* **Custom Page is used only for display**
-* **Standard forms are used for create/edit**
-
-### Why this approach
-
-This approach:
-
-* avoids data duplication
-* keeps a single source of truth
-* simplifies maintenance
-* supports a beautiful UX without sacrificing supportability
-* reduces complexity versus inline editing on a custom page
-
----
-
-## 4. Solution Scope
-
-### In Scope
-
-* Create Promotion Header table
-* Create Promotion Line table
-* Relate Promotions to Sales Group
-* Display Promotions on Sales Group form
-* Display Promotions on Account form by Sales Group inheritance
-* Use Custom Page for display only
-* Use standard forms for create/edit
-* Allow users to open Promotion records from display page
-* Allow users to create new Promotion records from display page
-
-### Out of Scope for Phase 1
-
-* Inline editing in the Custom Page
-* Spreadsheet-style inline row editing
-* Product master integration
-* Approval workflows
-* account-level exceptions / assignment table
-* cloning logic
-* import automation
-
----
-
-## 5. High-Level Architecture
-
-### Entity Relationship Model
-
-* **Sales Group** 1:N **Account**
-* **Sales Group** 1:N **Promotion Header**
-* **Promotion Header** 1:N **Promotion Line**
-
-### Functional Flow
-
-1. User opens a Sales Group or Account
-2. Embedded Custom Page loads in Promotions tab
-3. If on Sales Group, page reads Promotions directly for that Sales Group
-4. If on Account, page reads Account’s Sales Group and then loads that group’s Promotions
-5. User clicks **Open Promotion** to edit using standard form
-6. User clicks **New Promotion** to open standard Promotion Header form with Sales Group prefilled
-
----
-
-## 6. Tables Involved
-
-### 6.1 Sales Group
-
-Existing parent table representing the commercial grouping.
-
-Key required field used by this solution:
-
-* Sales Group primary name field (existing)
-
-### 6.2 Account
-
-Standard Account table.
-
-Required field used by this solution:
-
-* `prm_salesgroupid` (Lookup to Sales Group)
-
-### 6.3 Promotion Header
-
-New custom table to store campaign-level promotion data.
-
-### 6.4 Promotion Line
-
-New custom table to store line/product-level data beneath each Promotion Header.
-
----
-
-## 7. Detailed Table Design
-
-## 7.1 Promotion Header Table
-
-### Table Definition
-
-* Display Name: Promotion Header
-* Plural Name: Promotion Headers
-* Schema Name: `prm_PromotionHeader`
-* Logical Name: `prm_promotionheader`
-* Primary Name Column: `prm_name`
-
-### Columns
-
-| Display Name            | Logical Name                | Data Type                     | Required | Notes                                      |
-| ----------------------- | --------------------------- | ----------------------------- | -------- | ------------------------------------------ |
-| Promotion Name          | `prm_name`                  | Single Line of Text           | Yes      | Primary name                               |
-| Sales Group             | `prm_salesgroupid`          | Lookup                        | Yes      | Lookup to Sales Group                      |
-| Promotion Code          | `prm_promotioncode`         | Single Line of Text           | No       | Optional business key                      |
-| Campaign Month          | `prm_campaignmonth`         | Single Line of Text or Choice | No       | Example January                            |
-| Campaign Year           | `prm_campaignyear`          | Whole Number                  | No       | Example 2026                               |
-| Activity                | `prm_activity`              | Single Line of Text           | Yes      | Campaign activity                          |
-| Buy Period              | `prm_buyperiod`             | Single Line of Text           | No       | Example NA or date text                    |
-| Promotion Start Date    | `prm_promotionstartdate`    | Date Only                     | Yes      | Start of promotion                         |
-| Promotion End Date      | `prm_promotionenddate`      | Date Only                     | Yes      | End of promotion                           |
-| Promotional Period Text | `prm_promotionalperiodtext` | Single Line of Text           | No       | Legacy display string                      |
-| Scan Percent            | `prm_scanpercent`           | Decimal Number                | No       | Example 5.00                               |
-| Action                  | `prm_action`                | Single Line of Text           | No       | Example NA                                 |
-| Promotion Type          | `prm_promotiontype`         | Choice                        | No       | Optional classification                    |
-| Status                  | `prm_status`                | Choice                        | Yes      | Draft, Upcoming, Active, Expired, Inactive |
-| Header Comment          | `prm_headercomment`         | Multiple Lines of Text        | No       | Header-level note                          |
-| Market                  | `prm_market`                | Single Line of Text           | No       | Example NZ                                 |
-| Region                  | `prm_region`                | Single Line of Text           | No       | Optional                                   |
-| Display Order           | `prm_displayorder`          | Whole Number                  | No       | Card sorting                               |
-| Active Flag             | `prm_activeflag`            | Yes/No                        | No       | Optional filter helper                     |
-| Notes                   | `prm_notes`                 | Multiple Lines of Text        | No       | Admin notes                                |
-| External Reference      | `prm_externalreference`     | Single Line of Text           | No       | Import mapping                             |
-| Source File Name        | `prm_sourcefilename`        | Single Line of Text           | No       | Spreadsheet source                         |
-| Last Imported On        | `prm_lastimportedon`        | Date and Time                 | No       | Optional                                   |
-
-### Minimum Phase 1 Columns
-
-* `prm_name`
-* `prm_salesgroupid`
-* `prm_activity`
-* `prm_buyperiod`
-* `prm_promotionstartdate`
-* `prm_promotionenddate`
-* `prm_scanpercent`
-* `prm_action`
-* `prm_status`
-* `prm_headercomment`
-* `prm_displayorder`
-
----
-
-## 7.2 Promotion Line Table
-
-### Table Definition
-
-* Display Name: Promotion Line
-* Plural Name: Promotion Lines
-* Schema Name: `prm_PromotionLine`
-* Logical Name: `prm_promotionline`
-* Primary Name Column: `prm_name`
-
-### Columns
-
-| Display Name        | Logical Name            | Data Type                     | Required | Notes                        |
-| ------------------- | ----------------------- | ----------------------------- | -------- | ---------------------------- |
-| Promotion Line Name | `prm_name`              | Single Line of Text           | Yes      | Primary name                 |
-| Promotion Header    | `prm_promotionheaderid` | Lookup                        | Yes      | Lookup to Promotion Header   |
-| Product Code        | `prm_productcode`       | Single Line of Text           | Yes      | Code from source sheet       |
-| Product Name        | `prm_productname`       | Single Line of Text           | Yes      | Product description          |
-| Discount Percent    | `prm_discountpercent`   | Decimal Number                | No       | Example 10.00                |
-| Discount Text       | `prm_discounttext`      | Single Line of Text           | No       | Optional alternative display |
-| Comment             | `prm_comment`           | Single Line of Text           | No       | Example Featured             |
-| Line Description    | `prm_linedescription`   | Multiple Lines of Text        | No       | Optional                     |
-| Sort Order          | `prm_sortorder`         | Whole Number                  | No       | Controls line sequence       |
-| Featured            | `prm_featured`          | Yes/No                        | No       | Optional highlight flag      |
-| Product Category    | `prm_productcategory`   | Single Line of Text or Choice | No       | Optional                     |
-| External Item ID    | `prm_externalitemid`    | Single Line of Text           | No       | Optional                     |
-| UOM                 | `prm_uom`               | Single Line of Text           | No       | Optional                     |
-| Active Flag         | `prm_activeflag`        | Yes/No                        | No       | Optional                     |
-| Notes               | `prm_notes`             | Multiple Lines of Text        | No       | Optional                     |
-
-### Minimum Phase 1 Columns
-
-* `prm_name`
-* `prm_promotionheaderid`
-* `prm_productcode`
-* `prm_productname`
-* `prm_discountpercent`
-* `prm_comment`
-* `prm_sortorder`
-* `prm_featured`
-
----
-
-## 8. Relationships
-
-### 8.1 Sales Group to Account
-
-* Relationship: 1:N
-* Account field: `prm_salesgroupid`
-* Purpose: determines which group an Account belongs to
-
-### 8.2 Sales Group to Promotion Header
-
-* Relationship: 1:N
-* Promotion Header field: `prm_salesgroupid`
-* Purpose: Promotion ownership
-
-### 8.3 Promotion Header to Promotion Line
-
-* Relationship: 1:N
-* Promotion Line field: `prm_promotionheaderid`
-* Purpose: line item detail beneath a Promotion
-
----
-
-## 9. Choice Fields
-
-## 9.1 Promotion Status
-
-Field: `prm_status`
-
-Recommended values:
-
-* Draft = 100000000
-* Upcoming = 100000001
-* Active = 100000002
-* Expired = 100000003
-* Inactive = 100000004
-
-## 9.2 Promotion Type
-
-Field: `prm_promotiontype`
-
-Recommended values:
-
-* Catalogue = 100000000
-* Hero Spot = 100000001
-* Seasonal = 100000002
-* Discount Offer = 100000003
-* Bundle = 100000004
-* Featured Product = 100000005
-* Other = 100000006
-
----
-
-## 10. Naming Standards
-
-### Promotion Header Name
-
-Recommended pattern for `prm_name`:
-`[Sales Group] | [Campaign Month] [Campaign Year] | [Activity]`
-
-Example:
-`CWH NZ | January 2026 | Jan Catalogue Hero Spot`
-
-### Promotion Line Name
-
-Recommended pattern for `prm_name`:
-`[Product Code] - [Product Name]`
-
-Example:
-`HC90 - Inner Health Plus 90 Caps`
-
----
-
-## 11. Forms Design
-
-## 11.1 Promotion Header Main Form
-
-### Purpose
-
-Primary create/edit experience.
-
-### Suggested sections
-
-#### General
-
-* Promotion Name
-* Sales Group
-* Status
-* Promotion Type
-* Campaign Month
-* Campaign Year
-
-#### Promotion Details
-
-* Activity
-* Buy Period
-* Promotion Start Date
-* Promotion End Date
-* Scan Percent
-* Action
-* Header Comment
-
-#### Notes
-
-* Notes
-* Market
-* Region
-* Display Order
-
-#### Lines
-
-* Subgrid of Promotion Lines
-
-### Behavior
-
-Users manage the Promotion Header and related Promotion Lines here.
-
----
-
-## 11.2 Promotion Line Form
-
-### Purpose
-
-Create/edit line items.
-
-### Suggested fields
-
-* Promotion Line Name
-* Promotion Header
-* Product Code
-* Product Name
-* Discount Percent
-* Comment
-* Sort Order
-* Featured
-* Notes
-
----
-
-## 12. Custom Page Design
-
-### Purpose
-
-Display Promotions in a visually attractive way on Sales Group and Account forms.
-
-### Rule
-
-The Custom Page is display-only.
-All create/edit activity occurs in the standard forms.
-
-### Embedded Locations
-
-* Sales Group form tab: Promotions
-* Account form tab: Promotions
-
-### Display Behavior
-
-#### If page is opened from Sales Group
-
-* read current Sales Group ID
-* display Promotion Headers where `prm_salesgroupid` = current group
-
-#### If page is opened from Account
-
-* read current Account record
-* get Account.`prm_salesgroupid`
-* display Promotion Headers where `prm_salesgroupid` = Account’s Sales Group
-
-### UI Recommendations
-
-* Card-based Promotion display
-* status badge
-* date range visible
-* top-level filter buttons: All, Active, Upcoming, Expired
-* line preview beneath each header
-* action buttons on each card
-
-### Buttons on Custom Page
-
-#### Top Actions
-
-* New Promotion
-* Refresh
-
-#### Card Actions
-
-* Open Promotion
-
----
-
-## 13. Standard Form Integration
-
-### New Promotion Behavior
-
-When user clicks **New Promotion**:
-
-* open standard Promotion Header main form
-* prepopulate `prm_salesgroupid`
-
-If launched from Account:
-
-* resolve Account Sales Group first
-* prepopulate Promotion Header Sales Group with that value
-
-### Open Promotion Behavior
-
-When user clicks **Open Promotion**:
-
-* open Promotion Header main form for selected record
-* user edits header and line items there
-
----
-
-## 14. Automation Recommendations
-
-### Phase 1
-
-No complex automation is required for basic functionality.
-
-### Recommended simple automation
-
-Auto-maintain `prm_status` based on date rules:
-
-* if today < start date → Upcoming
-* if today between start and end → Active
-* if today > end date → Expired
-
-This can be implemented using:
-
-* Power Automate cloud flow
-* plugin if real-time enforcement is later required
-
-### Optional naming automation
-
-Auto-build:
-
-* Promotion Header `prm_name`
-* Promotion Line `prm_name`
-
----
-
-## 15. Security Considerations
-
-### Security needs
-
-Define who can:
-
-* view Promotions
-* create Promotions
-* edit Promotions
-* edit Promotion Lines
-
-### Recommended pattern
-
-* broader view access for users who need to consume Promotions
-* create/edit access for Sales/Marketing/power users only
-
-### Tables needing security consideration
-
-* Promotion Header
-* Promotion Line
-
----
-
-## 16. Data Migration Considerations
-
-Since Promotions are currently in spreadsheets, migration may be needed.
-
-### Recommended migration approach
-
-1. separate spreadsheet data into:
-
-   * Promotion Header rows
-   * Promotion Line rows
-2. load Promotion Headers first
-3. load Promotion Lines second
-4. map lines to the correct Promotion Header
-
-### Suggested import helpers
-
-Useful fields for migration:
-
-* `prm_externalreference`
-* `prm_sourcefilename`
-* `prm_lastimportedon`
-
----
-
-## 17. Reporting and User Experience Considerations
-
-### Filters to include on Custom Page
-
-* All
-* Active
-* Upcoming
-* Expired
-
-### Sort recommendations
-
-Promotion Header:
-
-* Display Order ascending
-* then Promotion Start Date descending
-
-Promotion Line:
-
-* Sort Order ascending
-
-### UX notes
-
-The Custom Page should emphasize readability and polish, not editing.
-This improves adoption while keeping the maintenance model simple.
-
----
-
-## 18. Risks and Mitigations
-
-### Risk 1: Overcomplicating the Custom Page
-
-Mitigation:
-
-* keep it display-only
-* launch standard forms for maintenance
-
-### Risk 2: Missing Sales Group on Account
-
-Mitigation:
-
-* make Account Sales Group field required where business permits
-* validate before showing inherited promotions
-
-### Risk 3: Spreadsheet-style expectations
-
-Mitigation:
-
-* train users on header/line structure
-* show a familiar grouped layout in the Custom Page
-
-### Risk 4: Status becoming inaccurate
-
-Mitigation:
-
-* add simple scheduled or triggered automation for status maintenance
-
----
-
-## 19. Phased Delivery Plan
-
-### Phase 1
-
-* create Promotion Header table
-* create Promotion Line table
-* create relationships
-* build standard forms
-* build display-only Custom Page
-* embed page on Sales Group form
-* embed page on Account form
-* wire New Promotion and Open Promotion actions
-
-### Phase 2
-
-* add status automation
-* improve styling and filters
-* add import support
-* add clone promotion capability if needed
-
-### Phase 3
-
-* optional product lookup integration
-* optional approval workflow
-* optional analytics/dashboarding
-
----
-
-## 20. Final Recommendation
-
-The recommended enterprise design is:
-
-* **Sales Group owns Promotions**
-* **Promotion Header stores campaign-level details**
-* **Promotion Line stores item-level details**
-* **Accounts display Promotions by inheriting from Sales Group**
-* **Custom Page is used only for beautiful display**
-* **Standard forms remain the edit experience**
-
-This design is scalable, clean, supportable, and aligned with the user’s desire for a polished display without creating unnecessary complexity.
-
----
-
-## 21. Build Checklist
-
-### Data Model
-
-* [ ] confirm Sales Group table
-* [ ] confirm Account Sales Group lookup
-* [ ] create Promotion Header table
-* [ ] create Promotion Line table
-* [ ] create relationships
-
-### Forms
-
-* [ ] build Promotion Header form
-* [ ] build Promotion Line form
-* [ ] add Promotion Line subgrid to Promotion Header form
-
-### Custom Page
-
-* [ ] create display-only Custom Page
-* [ ] configure Sales Group context logic
-* [ ] configure Account context logic
-* [ ] add filters
-* [ ] add New Promotion button
-* [ ] add Open Promotion button
-
-### Embedding
-
-* [ ] embed on Sales Group form
-* [ ] embed on Account form
-* [ ] test role-based access
-
-### Testing
-
-* [ ] test create from Sales Group
-* [ ] test create from Account
-* [ ] test display inheritance on Account
-* [ ] test line item visibility
-* [ ] test filtering
-
----
-
-## 22. Assumptions
-
-* Sales Group table already exists
-* Account can be related to one Sales Group
-* Promotions are owned by Sales Group, not directly by Account
-* Users accept opening standard forms for maintenance
-* Custom Page is intended for display only
-
----
-
-## 23. Open Questions for Final Build
-
-* What is the exact logical name of the Sales Group table?
-* Does Account already have a Sales Group lookup?
-* Should users be allowed to create Promotions from Account form, or only view/open them there?
-* Is `Promotion Type` required in phase 1?
-* Is automated status maintenance needed immediately or later?
-* Will historical spreadsheet data be imported during phase 1?
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Buying Group Promotions</title>
+  <style>
+    :root {
+      --mg-primary-dark: #002A54;
+      --mg-primary: #3555C7;
+      --mg-secondary: #4D6A87;
+      --mg-text: #393D40;
+      --mg-border: #D0D3D6;
+      --mg-bg: #FAFBFC;
+      --mg-surface: #FFFFFF;
+      --mg-soft-blue: #DAE6F2;
+      --mg-accent-purple: #77447D;
+      --mg-active-bg: #E1EDED;
+      --mg-active-text: #1D5959;
+      --mg-upcoming-bg: #FCE7DA;
+      --mg-upcoming-text: #A64F11;
+      --mg-expired-bg: #D0D3D6;
+      --mg-expired-text: #393D40;
+      --shadow: 0 8px 24px rgba(0, 42, 84, 0.08);
+      --radius: 18px;
+      --radius-sm: 12px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--mg-bg);
+      color: var(--mg-text);
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+    body {
+      padding: 16px;
+    }
+
+    .page {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .card-shell {
+      background: var(--mg-surface);
+      border: 1px solid var(--mg-border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 20px 22px;
+      margin-bottom: 16px;
+    }
+
+    .title-block h1 {
+      margin: 0 0 6px;
+      font-size: 28px;
+      color: var(--mg-primary-dark);
+    }
+
+    .title-block p {
+      margin: 0;
+      color: var(--mg-secondary);
+      font-size: 14px;
+    }
+
+    .actions, .filters {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      appearance: none;
+      border: 1px solid var(--mg-border);
+      background: var(--mg-surface);
+      color: var(--mg-text);
+      border-radius: 12px;
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+
+    .btn-primary {
+      background: var(--mg-primary);
+      color: #fff;
+      border-color: var(--mg-primary);
+    }
+
+    .btn-chip {
+      background: #fff;
+    }
+
+    .btn-chip.active {
+      background: var(--mg-soft-blue);
+      color: var(--mg-primary-dark);
+      border-color: #b9cfe5;
+    }
+
+    .context-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(180px, 1fr));
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .context-card {
+      padding: 16px 18px;
+    }
+
+    .context-label {
+      font-size: 12px;
+      color: var(--mg-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 8px;
+    }
+
+    .context-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--mg-primary-dark);
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      margin-bottom: 18px;
+    }
+
+    .toolbar-meta {
+      color: var(--mg-secondary);
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .message {
+      padding: 16px 18px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--mg-border);
+      background: #fff;
+      color: var(--mg-secondary);
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    .promo-list {
+      display: grid;
+      gap: 18px;
+    }
+
+    .promo-card {
+      overflow: hidden;
+    }
+
+    .promo-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 20px 22px 12px;
+    }
+
+    .promo-title {
+      margin: 0 0 6px;
+      font-size: 24px;
+      color: var(--mg-primary-dark);
+    }
+
+    .promo-subtitle {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--mg-secondary);
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .status-draft {
+      background: #ede7f6;
+      color: #5b3f86;
+    }
+
+    .status-upcoming {
+      background: var(--mg-upcoming-bg);
+      color: var(--mg-upcoming-text);
+    }
+
+    .status-active {
+      background: var(--mg-active-bg);
+      color: var(--mg-active-text);
+    }
+
+    .status-expired {
+      background: var(--mg-expired-bg);
+      color: var(--mg-expired-text);
+    }
+
+    .status-inactive {
+      background: #f2f4f7;
+      color: #667085;
+    }
+
+    .promo-meta {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(140px, 1fr));
+      gap: 12px;
+      padding: 0 22px 14px;
+    }
+
+    .meta-box {
+      background: #f8fbff;
+      border: 1px solid #dbe6f0;
+      border-radius: 14px;
+      padding: 12px 14px;
+    }
+
+    .meta-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--mg-secondary);
+      margin-bottom: 8px;
+    }
+
+    .meta-value {
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1.35;
+      color: var(--mg-text);
+    }
+
+    .promo-note {
+      margin: 0 22px 16px;
+      padding: 14px 16px;
+      background: #f8fbff;
+      border-left: 4px solid var(--mg-primary);
+      border-radius: 0 12px 12px 0;
+      color: var(--mg-text);
+      font-size: 14px;
+    }
+
+    .line-section {
+      padding: 0 22px 18px;
+    }
+
+    .line-header, .line-row {
+      display: grid;
+      grid-template-columns: 120px 1.8fr 120px 160px;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .line-header {
+      background: #eef4fb;
+      border: 1px solid #dbe6f0;
+      border-radius: 12px 12px 0 0;
+      padding: 12px 14px;
+      color: var(--mg-secondary);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .line-table {
+      border: 1px solid #dbe6f0;
+      border-top: 0;
+      border-radius: 0 0 14px 14px;
+      overflow: hidden;
+    }
+
+    .line-row {
+      padding: 12px 14px;
+      border-top: 1px solid #edf2f7;
+      background: #fff;
+      font-size: 14px;
+    }
+
+    .line-row:first-child {
+      border-top: 0;
+    }
+
+    .line-code {
+      font-weight: 700;
+      color: var(--mg-primary-dark);
+    }
+
+    .line-discount {
+      font-weight: 700;
+      color: var(--mg-active-text);
+    }
+
+    .line-comment {
+      color: var(--mg-secondary);
+      font-weight: 600;
+    }
+
+    .promo-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 0 22px 20px;
+      flex-wrap: wrap;
+    }
+
+    .footer-meta {
+      color: var(--mg-secondary);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .spinner-wrap {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 32px 0;
+      color: var(--mg-secondary);
+      font-weight: 600;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 1100px) {
+      .context-grid,
+      .promo-meta {
+        grid-template-columns: repeat(2, minmax(180px, 1fr));
+      }
+    }
+
+    @media (max-width: 800px) {
+      .header,
+      .toolbar,
+      .promo-top,
+      .promo-footer {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .context-grid,
+      .promo-meta,
+      .line-header,
+      .line-row {
+        grid-template-columns: 1fr;
+      }
+
+      .line-header {
+        display: none;
+      }
+
+      .line-row > div::before {
+        display: block;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--mg-secondary);
+        margin-bottom: 4px;
+      }
+
+      .line-row > div:nth-child(1)::before { content: "Code"; }
+      .line-row > div:nth-child(2)::before { content: "Product"; }
+      .line-row > div:nth-child(3)::before { content: "Discount"; }
+      .line-row > div:nth-child(4)::before { content: "Comment"; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="header card-shell">
+      <div class="title-block">
+        <h1>Group Promotions</h1>
+        <p>Read-only display. Open the standard form to edit a promotion.</p>
+      </div>
+      <div class="actions">
+        <button id="btnRefresh" class="btn">Refresh</button>
+        <button id="btnNewPromotion" class="btn btn-primary">New Promotion</button>
+      </div>
+    </section>
+
+    <section class="context-grid">
+      <div class="context-card card-shell">
+        <div class="context-label">Buying Group</div>
+        <div id="ctxBuyingGroupName" class="context-value">Loading...</div>
+      </div>
+      <div class="context-card card-shell">
+        <div class="context-label">Current Record</div>
+        <div id="ctxCurrentRecord" class="context-value">Loading...</div>
+      </div>
+      <div class="context-card card-shell">
+        <div class="context-label">Active Promotions</div>
+        <div id="ctxActiveCount" class="context-value">0</div>
+      </div>
+      <div class="context-card card-shell">
+        <div class="context-label">Total Product Lines</div>
+        <div id="ctxLineCount" class="context-value">0</div>
+      </div>
+    </section>
+
+    <section class="toolbar card-shell">
+      <div class="filters">
+        <button class="btn btn-chip active" data-filter="all">All</button>
+        <button class="btn btn-chip" data-filter="active">Active</button>
+        <button class="btn btn-chip" data-filter="upcoming">Upcoming</button>
+        <button class="btn btn-chip" data-filter="expired">Expired</button>
+      </div>
+      <div id="toolbarMeta" class="toolbar-meta">Showing 0 promotions</div>
+    </section>
+
+    <div id="messageBar" class="message"></div>
+    <div id="loadingState" class="spinner-wrap">Loading promotions...</div>
+    <section id="promoList" class="promo-list"></section>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      const CONFIG = {
+        accountEntity: 'account',
+        buyingGroupEntity: 'meta_group',
+        promotionHeaderEntity: 'meta_promotionheade',
+        promotionLineEntity: 'meta_promotionline',
+        accountBuyingGroupField: 'meta_group',
+        promotionHeaderBuyingGroupField: 'meta_buyinggroup',
+        promotionLineHeaderField: 'meta_promotionheader',
+        promotionStatusField: 'meta_promotionstatus',
+        fields: {
+          promotionHeaderId: 'meta_promotionheadeid',
+          promotionLineId: 'meta_promotionlineid',
+          buyingGroupId: 'meta_groupid',
+          buyingGroupName: 'meta_name',
+          promotionNamePrimary: 'meta_name',
+          promotionName: 'meta_promotionname',
+          activity: 'meta_activity',
+          buyPeriod: 'meta_buyperiod',
+          promotionStartDate: 'meta_promotionstartdate',
+          promotionEndDate: 'meta_promotionenddate',
+          scanPercent: 'meta_scanpercent',
+          action: 'meta_action',
+          displayOrder: 'meta_displayorder',
+          headerComment: 'meta_headercomment',
+          productCode: 'meta_productcode',
+          productName: 'meta_productname',
+          discountPercent: 'meta_discountpercent',
+          comment: 'meta_comment',
+          sortOrder: 'meta_sortorder',
+          featured: 'meta_featured'
+        },
+        statusMap: {
+          100000000: 'Draft',
+          100000001: 'Upcoming',
+          100000002: 'Active',
+          100000003: 'Expired',
+          100000004: 'Inactive'
+        }
+      };
+
+      const state = {
+        filter: 'all',
+        entityName: null,
+        recordId: null,
+        currentRecordName: null,
+        buyingGroupId: null,
+        buyingGroupName: null,
+        promotions: [],
+        linesByPromotion: {}
+      };
+
+      const els = {
+        promoList: document.getElementById('promoList'),
+        loadingState: document.getElementById('loadingState'),
+        messageBar: document.getElementById('messageBar'),
+        toolbarMeta: document.getElementById('toolbarMeta'),
+        ctxBuyingGroupName: document.getElementById('ctxBuyingGroupName'),
+        ctxCurrentRecord: document.getElementById('ctxCurrentRecord'),
+        ctxActiveCount: document.getElementById('ctxActiveCount'),
+        ctxLineCount: document.getElementById('ctxLineCount'),
+        btnRefresh: document.getElementById('btnRefresh'),
+        btnNewPromotion: document.getElementById('btnNewPromotion'),
+        filterButtons: Array.prototype.slice.call(document.querySelectorAll('[data-filter]'))
+      };
+
+      function normalizeGuid(id) {
+        if (!id) return null;
+        return id.replace(/[{}]/g, '').toLowerCase();
+      }
+
+      function formatDate(value) {
+        if (!value) return 'N/A';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return value;
+        return date.toLocaleDateString(undefined, {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric'
+        });
+      }
+
+      function formatNumber(value) {
+        if (value === null || value === undefined || value === '') return 'N/A';
+        return String(value);
+      }
+
+      function getStatusLabel(statusValue) {
+        return CONFIG.statusMap[statusValue] || 'Unknown';
+      }
+
+      function getStatusClass(statusValue) {
+        switch (statusValue) {
+          case 100000000: return 'status-draft';
+          case 100000001: return 'status-upcoming';
+          case 100000002: return 'status-active';
+          case 100000003: return 'status-expired';
+          case 100000004: return 'status-inactive';
+          default: return 'status-inactive';
+        }
+      }
+
+      function escapeHtml(value) {
+        const text = value === null || value === undefined ? '' : String(value);
+        return text
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function showMessage(message, isError) {
+        els.messageBar.textContent = message;
+        els.messageBar.style.display = 'block';
+        els.messageBar.style.background = isError ? '#fde8e8' : '#f8fbff';
+        els.messageBar.style.color = isError ? '#b42318' : 'var(--mg-secondary)';
+      }
+
+      function hideMessage() {
+        els.messageBar.style.display = 'none';
+        els.messageBar.textContent = '';
+      }
+
+      function getFormContext() {
+        try {
+          if (window.parent && window.parent.Xrm && window.parent.Xrm.Page && window.parent.Xrm.Page.data && window.parent.Xrm.Page.data.entity) {
+            return window.parent.Xrm.Page;
+          }
+        } catch (e) {
+          console.warn('Unable to access parent Xrm.Page.', e);
+        }
+        return null;
+      }
+
+      function getClientUrl() {
+        try {
+          if (window.parent && window.parent.Xrm && window.parent.Xrm.Utility && typeof window.parent.Xrm.Utility.getGlobalContext === 'function') {
+            return window.parent.Xrm.Utility.getGlobalContext().getClientUrl();
+          }
+        } catch (e) {
+          console.warn('Unable to get client URL.', e);
+        }
+        return null;
+      }
+
+      async function webApiGet(path) {
+        const clientUrl = getClientUrl();
+        if (!clientUrl) throw new Error('Could not determine Dynamics client URL.');
+
+        const response = await fetch(clientUrl + '/api/data/v9.2/' + path, {
+          method: 'GET',
+          headers: {
+            'OData-MaxVersion': '4.0',
+            'OData-Version': '4.0',
+            'Accept': 'application/json',
+            'Content-Type': 'application/json; charset=utf-8',
+            'Prefer': 'odata.include-annotations="*"'
+          },
+          credentials: 'include'
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error('Web API request failed: ' + response.status + ' ' + errorText);
+        }
+
+        return response.json();
+      }
+
+      function getFormEntityInfo() {
+        const formContext = getFormContext();
+        if (!formContext) {
+          throw new Error('Form context was not found. Load this web resource on a Dynamics form.');
+        }
+
+        const entityName = formContext.data.entity.getEntityName();
+        const recordId = normalizeGuid(formContext.data.entity.getId());
+        const currentRecordName = formContext.data.entity.getPrimaryAttributeValue();
+
+        if (!entityName || !recordId) {
+          throw new Error('Could not determine current form record context.');
+        }
+
+        return {
+          entityName: entityName,
+          recordId: recordId,
+          currentRecordName: currentRecordName || ''
+        };
+      }
+
+      async function resolveBuyingGroupContext() {
+        const ctx = getFormEntityInfo();
+        state.entityName = ctx.entityName;
+        state.recordId = ctx.recordId;
+        state.currentRecordName = ctx.currentRecordName;
+        els.ctxCurrentRecord.textContent = ctx.currentRecordName || ctx.recordId;
+
+        if (ctx.entityName === CONFIG.buyingGroupEntity) {
+          state.buyingGroupId = ctx.recordId;
+          state.buyingGroupName = ctx.currentRecordName || 'Buying Group';
+          return;
+        }
+
+        if (ctx.entityName === CONFIG.accountEntity) {
+          const selectFields = ['name', '_' + CONFIG.accountBuyingGroupField + '_value'].join(',');
+          const accountPath = CONFIG.accountEntity + 's(' + ctx.recordId + ')?$select=' + selectFields;
+          const accountResult = await webApiGet(accountPath);
+
+          const buyingGroupId = normalizeGuid(accountResult['_' + CONFIG.accountBuyingGroupField + '_value']);
+          const buyingGroupName = accountResult['_' + CONFIG.accountBuyingGroupField + '_value@OData.Community.Display.V1.FormattedValue'];
+
+          if (!buyingGroupId) {
+            throw new Error('This Account is not linked to a Buying Group through ' + CONFIG.accountBuyingGroupField + '.');
+          }
+
+          state.buyingGroupId = buyingGroupId;
+          state.buyingGroupName = buyingGroupName || 'Buying Group';
+          return;
+        }
+
+        throw new Error('This web resource currently supports only ' + CONFIG.buyingGroupEntity + ' and ' + CONFIG.accountEntity + ' forms.');
+      }
+
+      async function loadPromotions() {
+        const f = CONFIG.fields;
+        const select = [
+          f.promotionHeaderId,
+          f.promotionNamePrimary,
+          f.promotionName,
+          f.activity,
+          f.buyPeriod,
+          f.promotionStartDate,
+          f.promotionEndDate,
+          f.scanPercent,
+          f.action,
+          f.displayOrder,
+          f.headerComment,
+          CONFIG.promotionStatusField,
+          '_' + CONFIG.promotionHeaderBuyingGroupField + '_value'
+        ].join(',');
+
+        const filter = '_' + CONFIG.promotionHeaderBuyingGroupField + '_value eq ' + state.buyingGroupId;
+        const orderBy = f.displayOrder + ' asc,' + f.promotionStartDate + ' desc';
+        const path = CONFIG.promotionHeaderEntity + 's?$select=' + select + '&$filter=' + encodeURIComponent(filter) + '&$orderby=' + encodeURIComponent(orderBy);
+        const result = await webApiGet(path);
+        state.promotions = result.value || [];
+      }
+
+      async function loadPromotionLines() {
+        const f = CONFIG.fields;
+        const promotionIds = state.promotions.map(function (p) {
+          return normalizeGuid(p[f.promotionHeaderId]);
+        }).filter(Boolean);
+
+        state.linesByPromotion = {};
+        if (!promotionIds.length) return;
+
+        const chunkSize = 20;
+        for (let i = 0; i < promotionIds.length; i += chunkSize) {
+          const chunk = promotionIds.slice(i, i + chunkSize);
+          const filter = chunk.map(function (id) {
+            return '_' + CONFIG.promotionLineHeaderField + '_value eq ' + id;
+          }).join(' or ');
+
+          const select = [
+            f.promotionLineId,
+            f.productCode,
+            f.productName,
+            f.discountPercent,
+            f.comment,
+            f.sortOrder,
+            f.featured,
+            '_' + CONFIG.promotionLineHeaderField + '_value'
+          ].join(',');
+
+          const orderBy = f.sortOrder + ' asc';
+          const path = CONFIG.promotionLineEntity + 's?$select=' + select + '&$filter=' + encodeURIComponent(filter) + '&$orderby=' + encodeURIComponent(orderBy);
+          const result = await webApiGet(path);
+
+          (result.value || []).forEach(function (line) {
+            const promotionId = normalizeGuid(line['_' + CONFIG.promotionLineHeaderField + '_value']);
+            if (!state.linesByPromotion[promotionId]) state.linesByPromotion[promotionId] = [];
+            state.linesByPromotion[promotionId].push(line);
+          });
+        }
+      }
+
+      function getFilteredPromotions() {
+        if (state.filter === 'all') return state.promotions.slice();
+        return state.promotions.filter(function (promotion) {
+          const statusValue = promotion[CONFIG.promotionStatusField];
+          const statusLabel = getStatusLabel(statusValue).toLowerCase();
+          return statusLabel === state.filter;
+        });
+      }
+
+      function updateSummary(filteredPromotions) {
+        els.ctxBuyingGroupName.textContent = state.buyingGroupName || 'N/A';
+        const activeCount = state.promotions.filter(function (p) {
+          return p[CONFIG.promotionStatusField] === 100000002;
+        }).length;
+        els.ctxActiveCount.textContent = String(activeCount);
+
+        const lineCount = state.promotions.reduce(function (total, promotion) {
+          const promotionId = normalizeGuid(promotion[CONFIG.fields.promotionHeaderId]);
+          return total + ((state.linesByPromotion[promotionId] || []).length);
+        }, 0);
+        els.ctxLineCount.textContent = String(lineCount);
+        els.toolbarMeta.textContent = 'Showing ' + filteredPromotions.length + ' promotion(s)';
+      }
+
+      function renderPromotions() {
+        const f = CONFIG.fields;
+        const promotions = getFilteredPromotions();
+        updateSummary(promotions);
+
+        if (!promotions.length) {
+          els.promoList.innerHTML = '';
+          showMessage('No promotions found for the selected filter.', false);
+          return;
+        }
+
+        hideMessage();
+
+        els.promoList.innerHTML = promotions.map(function (promotion) {
+          const promotionId = normalizeGuid(promotion[f.promotionHeaderId]);
+          const statusValue = promotion[CONFIG.promotionStatusField];
+          const statusLabel = getStatusLabel(statusValue);
+          const lines = state.linesByPromotion[promotionId] || [];
+          const promoTitle = promotion[f.promotionName] || promotion[f.promotionNamePrimary] || 'Promotion';
+          const safeHeaderComment = promotion[f.headerComment] || 'No header comment provided.';
+
+          const linesHtml = lines.length
+            ? lines.map(function (line) {
+                return '<div class="line-row">' +
+                  '<div class="line-code">' + escapeHtml(line[f.productCode] || '') + '</div>' +
+                  '<div>' + escapeHtml(line[f.productName] || '') + '</div>' +
+                  '<div class="line-discount">' + escapeHtml(formatNumber(line[f.discountPercent])) + '%</div>' +
+                  '<div class="line-comment">' + escapeHtml(line[f.comment] || '') + '</div>' +
+                '</div>';
+              }).join('')
+            : '<div class="line-row"><div class="line-code">-</div><div>No promotion lines found.</div><div class="line-discount">-</div><div class="line-comment">-</div></div>';
+
+          return '' +
+            '<article class="promo-card card-shell" data-id="' + escapeHtml(promotionId) + '">' +
+              '<div class="promo-top">' +
+                '<div>' +
+                  '<h2 class="promo-title">' + escapeHtml(promoTitle) + '</h2>' +
+                  '<p class="promo-subtitle">' + escapeHtml(promotion[f.activity] || '') + '</p>' +
+                '</div>' +
+                '<span class="status-badge ' + getStatusClass(statusValue) + '">' + escapeHtml(statusLabel) + '</span>' +
+              '</div>' +
+              '<div class="promo-meta">' +
+                '<div class="meta-box"><div class="meta-label">Buy Period</div><div class="meta-value">' + escapeHtml(promotion[f.buyPeriod] || 'N/A') + '</div></div>' +
+                '<div class="meta-box"><div class="meta-label">Promotion Period</div><div class="meta-value">' + escapeHtml(formatDate(promotion[f.promotionStartDate])) + ' - ' + escapeHtml(formatDate(promotion[f.promotionEndDate])) + '</div></div>' +
+                '<div class="meta-box"><div class="meta-label">Scan</div><div class="meta-value">' + escapeHtml(formatNumber(promotion[f.scanPercent])) + '%</div></div>' +
+                '<div class="meta-box"><div class="meta-label">Action</div><div class="meta-value">' + escapeHtml(promotion[f.action] || 'N/A') + '</div></div>' +
+              '</div>' +
+              '<div class="promo-note">' + escapeHtml(safeHeaderComment) + '</div>' +
+              '<div class="line-section">' +
+                '<div class="line-header"><div>Code</div><div>Product</div><div>Discount</div><div>Comment</div></div>' +
+                '<div class="line-table">' + linesHtml + '</div>' +
+              '</div>' +
+              '<div class="promo-footer">' +
+                '<div class="footer-meta">' + lines.length + ' product line(s)</div>' +
+                '<div class="actions"><button class="btn js-open-promotion" data-id="' + escapeHtml(promotionId) + '">Open Promotion</button></div>' +
+              '</div>' +
+            '</article>';
+        }).join('');
+
+        bindPromotionButtons();
+      }
+
+      function bindPromotionButtons() {
+        const buttons = Array.prototype.slice.call(document.querySelectorAll('.js-open-promotion'));
+        buttons.forEach(function (button) {
+          button.addEventListener('click', function () {
+            const id = button.getAttribute('data-id');
+            openPromotionRecord(id);
+          });
+        });
+      }
+
+      function setFilter(filterValue) {
+        state.filter = filterValue;
+        els.filterButtons.forEach(function (button) {
+          button.classList.toggle('active', button.getAttribute('data-filter') === filterValue);
+        });
+        renderPromotions();
+      }
+
+      function openPromotionRecord(recordId) {
+        try {
+          if (window.parent && window.parent.Xrm && window.parent.Xrm.Navigation) {
+            window.parent.Xrm.Navigation.openForm({
+              entityName: CONFIG.promotionHeaderEntity,
+              entityId: recordId
+            });
+            return;
+          }
+          throw new Error('Xrm.Navigation is not available.');
+        } catch (e) {
+          showMessage('Could not open the Promotion record: ' + e.message, true);
+        }
+      }
+
+      function openNewPromotionForm() {
+        try {
+          if (!state.buyingGroupId) {
+            throw new Error('Buying Group context is not resolved.');
+          }
+
+          if (window.parent && window.parent.Xrm && window.parent.Xrm.Navigation) {
+            const formOptions = {
+              entityName: CONFIG.promotionHeaderEntity,
+              useQuickCreateForm: false
+            };
+
+            const formParameters = {};
+            formParameters[CONFIG.promotionHeaderBuyingGroupField] = state.buyingGroupId;
+            formParameters[CONFIG.promotionHeaderBuyingGroupField + 'name'] = state.buyingGroupName || '';
+            formParameters[CONFIG.promotionHeaderBuyingGroupField + 'type'] = CONFIG.buyingGroupEntity;
+
+            window.parent.Xrm.Navigation.openForm(formOptions, formParameters);
+            return;
+          }
+          throw new Error('Xrm.Navigation is not available.');
+        } catch (e) {
+          showMessage('Could not open a new Promotion form: ' + e.message, true);
+        }
+      }
+
+      async function refreshAll() {
+        els.loadingState.classList.remove('hidden');
+        els.promoList.innerHTML = '';
+        hideMessage();
+
+        try {
+          await resolveBuyingGroupContext();
+          await loadPromotions();
+          await loadPromotionLines();
+          renderPromotions();
+        } catch (e) {
+          console.error(e);
+          showMessage(e.message || 'An unexpected error occurred.', true);
+        } finally {
+          els.loadingState.classList.add('hidden');
+        }
+      }
+
+      function wireEvents() {
+        els.btnRefresh.addEventListener('click', refreshAll);
+        els.btnNewPromotion.addEventListener('click', openNewPromotionForm);
+        els.filterButtons.forEach(function (button) {
+          button.addEventListener('click', function () {
+            setFilter(button.getAttribute('data-filter'));
+          });
+        });
+      }
+
+      wireEvents();
+      refreshAll();
+    })();
+  </script>
+</body>
+</html>
