@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Promotions</title>
+  <style>
+    :root {
+      --brand-navy: #053264;
+      --brand-blue: #245F86;
+      --brand-bg-soft: #D7E3EE;
+      --brand-text: #0E2E57;
+      --brand-text-secondary: #173A67;
+      --brand-border: #E8EDF2;
+      --brand-surface: #FFFFFF;
+      --page-bg: #F6F8FB;
+      --status-active-bg: #E4F1E5;
+      --status-active-text: #2E6B38;
+      --status-upcoming-bg: #F1EAFE;
+      --status-upcoming-text: #6F4F88;
+      --status-expired-bg: #E8EDF2;
+      --status-expired-text: #5D6B7A;
+      --status-draft-bg: #EEF3FB;
+      --status-draft-text: #245F86;
+      --status-inactive-bg: #F3F4F6;
+      --status-inactive-text: #6B7280;
+      --shadow: 0 10px 28px rgba(5, 50, 100, 0.08);
+      --radius: 18px;
+      --radius-sm: 12px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--page-bg);
+      color: var(--brand-text);
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+    body { padding: 16px; }
+
+    .page {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .card-shell {
+      background: var(--brand-surface);
+      border: 1px solid var(--brand-border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 22px 24px;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, var(--brand-surface) 0%, #fbfdff 100%);
+    }
+
+    .title-block h1 {
+      margin: 0 0 6px;
+      font-size: 28px;
+      color: var(--brand-navy);
+      letter-spacing: -0.02em;
+    }
+
+    .title-block p {
+      margin: 0;
+      color: var(--brand-text-secondary);
+      font-size: 14px;
+    }
+
+    .actions, .filters {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      appearance: none;
+      border: 1px solid var(--brand-border);
+      background: var(--brand-surface);
+      color: var(--brand-text);
+      border-radius: 12px;
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.18s ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+
+    .btn-primary {
+      background: var(--brand-navy);
+      color: #fff;
+      border-color: var(--brand-navy);
+    }
+
+    .btn-primary:hover {
+      background: var(--brand-blue);
+      border-color: var(--brand-blue);
+    }
+
+    .btn-chip.active {
+      background: var(--brand-bg-soft);
+      color: var(--brand-navy);
+      border-color: #bfd2e3;
+    }
+
+    .hidden { display: none !important; }
+
+    .context-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(180px, 1fr));
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .context-card {
+      padding: 16px 18px;
+      background: linear-gradient(180deg, var(--brand-surface) 0%, #fbfdff 100%);
+    }
+
+    .context-label {
+      font-size: 12px;
+      color: var(--brand-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 8px;
+    }
+
+    .context-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--brand-navy);
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      margin-bottom: 18px;
+      background: var(--brand-surface);
+    }
+
+    .toolbar-meta {
+      color: var(--brand-text-secondary);
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .message {
+      padding: 16px 18px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--brand-border);
+      background: #fff;
+      color: var(--brand-text-secondary);
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    .promo-list {
+      display: grid;
+      gap: 18px;
+    }
+
+    .promo-card {
+      overflow: hidden;
+      background: var(--brand-surface);
+    }
+
+    .promo-image-wrap {
+      position: relative;
+      height: 240px;
+      background: #edf3f8;
+      overflow: hidden;
+      border-bottom: 1px solid var(--brand-border);
+    }
+
+    .promo-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .promo-image-fallback {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, var(--brand-bg-soft) 0%, #eef4f9 100%);
+      color: var(--brand-navy);
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .image-chip {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      background: rgba(255, 255, 255, 0.92);
+      color: var(--brand-navy);
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid var(--brand-border);
+      z-index: 2;
+    }
+
+    .promo-body {
+      padding-top: 0;
+    }
+
+    .promo-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 20px 22px 12px;
+      background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+    }
+
+    .promo-title {
+      margin: 0 0 6px;
+      font-size: 24px;
+      color: var(--brand-navy);
+      letter-spacing: -0.02em;
+    }
+
+    .promo-subtitle {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--brand-text-secondary);
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .status-draft { background: var(--status-draft-bg); color: var(--status-draft-text); }
+    .status-upcoming { background: var(--status-upcoming-bg); color: var(--status-upcoming-text); }
+    .status-active { background: var(--status-active-bg); color: var(--status-active-text); }
+    .status-expired { background: var(--status-expired-bg); color: var(--status-expired-text); }
+    .status-inactive { background: var(--status-inactive-bg); color: var(--status-inactive-text); }
+
+    .promo-meta {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(140px, 1fr));
+      gap: 12px;
+      padding: 0 22px 14px;
+    }
+
+    .meta-box {
+      background: #f9fbfe;
+      border: 1px solid var(--brand-border);
+      border-radius: 14px;
+      padding: 12px 14px;
+    }
+
+    .meta-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--brand-text-secondary);
+      margin-bottom: 8px;
+    }
+
+    .meta-value {
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1.35;
+      color: var(--brand-text);
+    }
+
+    .promo-note {
+      margin: 0 22px 16px;
+      padding: 14px 16px;
+      background: linear-gradient(90deg, var(--brand-bg-soft) 0%, #eef4f9 100%);
+      border-left: 4px solid var(--brand-navy);
+      border-radius: 0 12px 12px 0;
+      font-size: 14px;
+      color: var(--brand-text);
+    }
+
+    .line-section {
+      padding: 0 22px 18px;
+    }
+
+    .line-header, .line-row {
+      display: grid;
+      grid-template-columns: 120px 1.8fr 120px 160px;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .line-header {
+      background: var(--brand-bg-soft);
+      border: 1px solid var(--brand-border);
+      border-radius: 12px 12px 0 0;
+      padding: 12px 14px;
+      color: var(--brand-text-secondary);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .line-table {
+      border: 1px solid var(--brand-border);
+      border-top: 0;
+      border-radius: 0 0 14px 14px;
+      overflow: hidden;
+    }
+
+    .line-row {
+      padding: 12px 14px;
+      border-top: 1px solid #edf2f7;
+      background: #fff;
+      font-size: 14px;
+    }
+
+    .line-row:first-child { border-top: 0; }
+    .line-code { font-weight: 700; color: var(--brand-navy); }
+    .line-discount { font-weight: 700; color: var(--brand-blue); }
+    .line-comment { color: var(--brand-text-secondary); font-weight: 600; }
+
+    .promo-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 0 22px 20px;
+      flex-wrap: wrap;
+    }
+
+    .footer-meta {
+      color: var(--brand-text-secondary);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .spinner-wrap {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 32px 0;
+      color: var(--brand-text-secondary);
+      font-weight: 600;
+    }
+
+    @media (max-width: 900px) {
+      body { padding: 12px; }
+      .header, .toolbar, .promo-top, .promo-footer {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .actions, .filters { width: 100%; }
+      .actions .btn, .filters .btn { flex: 1 1 auto; }
+      .context-grid, .promo-meta { grid-template-columns: 1fr 1fr; }
+      .promo-image-wrap { height: 210px; }
+    }
+
+    @media (max-width: 640px) {
+      body { padding: 10px; }
+      .header, .context-card, .toolbar, .promo-top, .promo-note, .line-section, .promo-footer {
+        padding-left: 14px !important;
+        padding-right: 14px !important;
+      }
+      .title-block h1 { font-size: 22px; }
+      .title-block p, .toolbar-meta, .footer-meta, .promo-subtitle, .promo-note { font-size: 13px; }
+      .promo-title { font-size: 20px; }
+      .context-grid, .promo-meta { grid-template-columns: 1fr; }
+      .actions, .filters {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        width: 100%;
+      }
+      .actions .btn, .filters .btn { width: 100%; }
+      .line-header { display: none; }
+      .line-row { display: block; padding: 12px 14px; }
+      .line-row > div { margin-bottom: 8px; }
+      .line-row > div:last-child { margin-bottom: 0; }
+      .line-row > div::before {
+        display: block;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--brand-text-secondary);
+        margin-bottom: 4px;
+      }
+      .line-row > div:nth-child(1)::before { content: "Code"; }
+      .line-row > div:nth-child(2)::before { content: "Product"; }
+      .line-row > div:nth-child(3)::before { content: "Discount"; }
+      .line-row > div:nth-child(4)::before { content: "Comment"; }
+      .promo-footer .btn, .actions .btn { width: 100%; }
+      .promo-image-wrap { height: 180px; }
+    }
+
+    @media (max-width: 420px) {
+      .actions, .filters { grid-template-columns: 1fr; }
+      .btn { padding: 11px 14px; font-size: 13px; }
+      .meta-value, .context-value { font-size: 16px; }
+      .promo-image-wrap { height: 160px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="header card-shell">
+      <div class="title-block">
+        <h1 id="pageTitle">Promotions</h1>
+        <p id="pageSubtitle">Loading...</p>
+      </div>
+      <div class="actions">
+        <button id="btnRefresh" class="btn">Refresh</button>
+        <button id="btnNewPromotion" class="btn btn-primary hidden">New Promotion</button>
+      </div>
+    </section>
+
+    <section class="context-grid">
+      <div class="context-card card-shell">
+        <div class="context-label">Buying Group</div>
+        <div id="ctxBuyingGroupName" class="context-value">Loading...</div>
+      </div>
+      <div class="context-card card-shell">
+        <div id="ctxCurrentLabel" class="context-label">Current Record</div>
+        <div id="ctxCurrentRecord" class="context-value">Loading...</div>
+      </div>
+      <div class="context-card card-shell">
+        <div class="context-label">Active Promotions</div>
+        <div id="ctxActiveCount" class="context-value">0</div>
+      </div>
+      <div class="context-card card-shell">
+        <div class="context-label">Total Product Lines</div>
+        <div id="ctxLineCount" class="context-value">0</div>
+      </div>
+    </section>
+
+    <section class="toolbar card-shell">
+      <div class="filters">
+        <button class="btn btn-chip active" data-filter="all">All</button>
+        <button class="btn btn-chip" data-filter="active">Active</button>
+        <button class="btn btn-chip" data-filter="upcoming">Upcoming</button>
+        <button class="btn btn-chip" data-filter="expired">Expired</button>
+      </div>
+      <div id="toolbarMeta" class="toolbar-meta">Showing 0 promotions</div>
+    </section>
+
+    <div id="messageBar" class="message"></div>
+    <div id="loadingState" class="spinner-wrap">Loading promotions...</div>
+    <section id="promoList" class="promo-list"></section>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      const CONFIG = {
+        accountEntity: 'account',
+        buyingGroupEntity: 'meta_group',
+        buyingGroupOpenEntity: 'meta_group',
+        promotionHeaderEntity: 'meta_promotionheade',
+        promotionLineEntity: 'meta_promotionline',
+        accountBuyingGroupField: 'meta_group',
+        promotionHeaderBuyingGroupField: 'meta_buyinggroup',
+        promotionLineHeaderField: 'meta_promotionheader',
+        promotionStatusField: 'meta_promotionstatus',
+
+        // Verify these entity set names in your environment
+        entitySets: {
+          account: 'accounts',
+          buyingGroup: 'meta_groups',
+          promotionHeader: 'meta_promotionheades',
+          promotionLine: 'meta_promotionlines'
+        },
+
+        fileConfig: {
+          enabled: true,
+          fileLogicalName: 'meta_promotionbannerfile',
+          fileNameField: 'meta_promotionbannerfile_name',
+          fallbackText: 'No Banner Uploaded'
+        },
+
+        fields: {
+          promotionHeaderId: 'meta_promotionheadeid',
+          promotionLineId: 'meta_promotionlineid',
+          buyingGroupId: 'meta_groupid',
+          promotionNamePrimary: 'meta_name',
+          promotionName: 'meta_promotionname',
+          activity: 'meta_activity',
+          buyPeriod: 'meta_buyperiod',
+          promotionStartDate: 'meta_promotionstartdate',
+          promotionEndDate: 'meta_promotionenddate',
+          scanPercent: 'meta_scanpercent',
+          action: 'meta_action',
+          displayOrder: 'meta_displayorder',
+          headerComment: 'meta_headercomment',
+          productCode: 'meta_productcode',
+          productName: 'meta_productname',
+          discountPercent: 'meta_discountpercent',
+          comment: 'meta_comment',
+          sortOrder: 'meta_sortorder',
+          featured: 'meta_featured'
+        },
+
+        statusMap: {
+          100000000: 'Draft',
+          100000001: 'Upcoming',
+          100000002: 'Active',
+          100000003: 'Expired',
+          100000004: 'Inactive'
+        }
+      };
+
+      const state = {
+        filter: 'all',
+        entityName: null,
+        recordId: null,
+        currentRecordName: null,
+        buyingGroupId: null,
+        buyingGroupName: null,
+        promotions: [],
+        linesByPromotion: {}
+      };
+
+      const els = {
+        promoList: document.getElementById('promoList'),
+        loadingState: document.getElementById('loadingState'),
+        messageBar: document.getElementById('messageBar'),
+        toolbarMeta: document.getElementById('toolbarMeta'),
+        ctxBuyingGroupName: document.getElementById('ctxBuyingGroupName'),
+        ctxCurrentLabel: document.getElementById('ctxCurrentLabel'),
+        ctxCurrentRecord: document.getElementById('ctxCurrentRecord'),
+        ctxActiveCount: document.getElementById('ctxActiveCount'),
+        ctxLineCount: document.getElementById('ctxLineCount'),
+        btnRefresh: document.getElementById('btnRefresh'),
+        btnNewPromotion: document.getElementById('btnNewPromotion'),
+        pageTitle: document.getElementById('pageTitle'),
+        pageSubtitle: document.getElementById('pageSubtitle'),
+        filterButtons: Array.prototype.slice.call(document.querySelectorAll('[data-filter]'))
+      };
+
+      function normalizeGuid(id) {
+        if (!id) return null;
+        return id.replace(/[{}]/g, '').toLowerCase();
+      }
+
+      function formatDate(value) {
+        if (!value) return 'N/A';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return value;
+        return date.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
+      }
+
+      function formatNumber(value) {
+        if (value === null || value === undefined || value === '') return 'N/A';
+        return String(value);
+      }
+
+      function getStatusLabel(statusValue) {
+        return CONFIG.statusMap[statusValue] || 'Unknown';
+      }
+
+      function getStatusClass(statusValue) {
+        switch (statusValue) {
+          case 100000000: return 'status-draft';
+          case 100000001: return 'status-upcoming';
+          case 100000002: return 'status-active';
+          case 100000003: return 'status-expired';
+          case 100000004: return 'status-inactive';
+          default: return 'status-inactive';
+        }
+      }
+
+      function escapeHtml(value) {
+        const text = value === null || value === undefined ? '' : String(value);
+        return text
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function showMessage(message, isError) {
+        els.messageBar.textContent = message;
+        els.messageBar.style.display = 'block';
+        els.messageBar.style.background = isError ? '#fde8e8' : '#f8fbff';
+        els.messageBar.style.color = isError ? '#b42318' : 'var(--brand-text-secondary)';
+      }
+
+      function hideMessage() {
+        els.messageBar.style.display = 'none';
+        els.messageBar.textContent = '';
+      }
+
+      function setHeaderMode() {
+        if (state.entityName === CONFIG.accountEntity) {
+          els.pageTitle.textContent = 'Account Promotions';
+          els.pageSubtitle.textContent = 'Read-only display on Account. Promotions are maintained at the Buying Group level.';
+          els.ctxCurrentLabel.textContent = 'Account';
+          els.btnNewPromotion.classList.add('hidden');
+        } else if (state.entityName === CONFIG.buyingGroupEntity) {
+          els.pageTitle.textContent = 'Buying Group Promotions';
+          els.pageSubtitle.textContent = 'Promotions can be viewed here and new promotions can be created at the Buying Group level.';
+          els.ctxCurrentLabel.textContent = 'Buying Group';
+          els.btnNewPromotion.classList.remove('hidden');
+        }
+      }
+
+      function getFormContext() {
+        try {
+          if (window.parent && window.parent.Xrm && window.parent.Xrm.Page && window.parent.Xrm.Page.data && window.parent.Xrm.Page.data.entity) {
+            return window.parent.Xrm.Page;
+          }
+        } catch (e) {
+          console.warn('Unable to access parent Xrm.Page.', e);
+        }
+        return null;
+      }
+
+      function getClientUrl() {
+        try {
+          if (window.parent && window.parent.Xrm && window.parent.Xrm.Utility && typeof window.parent.Xrm.Utility.getGlobalContext === 'function') {
+            return window.parent.Xrm.Utility.getGlobalContext().getClientUrl();
+          }
+        } catch (e) {
+          console.warn('Unable to get client URL.', e);
+        }
+        return null;
+      }
+
+      async function webApiGet(path) {
+        const clientUrl = getClientUrl();
+        if (!clientUrl) throw new Error('Could not determine Dynamics client URL.');
+
+        const response = await fetch(clientUrl + '/api/data/v9.2/' + path, {
+          method: 'GET',
+          headers: {
+            'OData-MaxVersion': '4.0',
+            'OData-Version': '4.0',
+            'Accept': 'application/json',
+            'Content-Type': 'application/json; charset=utf-8',
+            'Prefer': 'odata.include-annotations="*"'
+          },
+          credentials: 'include'
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error('Web API request failed: ' + response.status + ' ' + errorText);
+        }
+
+        return response.json();
+      }
+
+      function getFormEntityInfo() {
+        const formContext = getFormContext();
+        if (!formContext) throw new Error('Form context was not found. Load this web resource on an Account or Buying Group form.');
+        const entityName = formContext.data.entity.getEntityName();
+        const recordId = normalizeGuid(formContext.data.entity.getId());
+        const currentRecordName = formContext.data.entity.getPrimaryAttributeValue();
+        if (!entityName || !recordId) throw new Error('Could not determine current record context.');
+        return { entityName, recordId, currentRecordName: currentRecordName || '' };
+      }
+
+      async function resolveBuyingGroupContext() {
+        const ctx = getFormEntityInfo();
+        state.entityName = ctx.entityName;
+        state.recordId = ctx.recordId;
+        state.currentRecordName = ctx.currentRecordName;
+        els.ctxCurrentRecord.textContent = ctx.currentRecordName || ctx.recordId;
+
+        if (ctx.entityName === CONFIG.buyingGroupEntity) {
+          state.buyingGroupId = ctx.recordId;
+          state.buyingGroupName = ctx.currentRecordName || 'Buying Group';
+          setHeaderMode();
+          return;
+        }
+
+        if (ctx.entityName === CONFIG.accountEntity) {
+          const selectFields = ['name', '_' + CONFIG.accountBuyingGroupField + '_value'].join(',');
+          const accountPath = CONFIG.entitySets.account + '(' + ctx.recordId + ')?$select=' + selectFields;
+          const accountResult = await webApiGet(accountPath);
+
+          const buyingGroupId = normalizeGuid(accountResult['_' + CONFIG.accountBuyingGroupField + '_value']);
+          const buyingGroupName = accountResult['_' + CONFIG.accountBuyingGroupField + '_value@OData.Community.Display.V1.FormattedValue'];
+
+          if (!buyingGroupId) {
+            throw new Error('This Account is not linked to a Buying Group through ' + CONFIG.accountBuyingGroupField + '.');
+          }
+
+          state.buyingGroupId = buyingGroupId;
+          state.buyingGroupName = buyingGroupName || 'Buying Group';
+          setHeaderMode();
+          return;
+        }
+
+        throw new Error('This web resource supports only the Account form and Buying Group form.');
+      }
+
+      async function loadPromotions() {
+        const f = CONFIG.fields;
+        const selectFields = [
+          f.promotionHeaderId,
+          f.promotionNamePrimary,
+          f.promotionName,
+          f.activity,
+          f.buyPeriod,
+          f.promotionStartDate,
+          f.promotionEndDate,
+          f.scanPercent,
+          f.action,
+          f.displayOrder,
+          f.headerComment,
+          CONFIG.promotionStatusField,
+          '_' + CONFIG.promotionHeaderBuyingGroupField + '_value'
+        ];
+
+        if (CONFIG.fileConfig.enabled && CONFIG.fileConfig.fileNameField) {
+          selectFields.push(CONFIG.fileConfig.fileNameField);
+        }
+
+        const select = selectFields.join(',');
+        const filter = '_' + CONFIG.promotionHeaderBuyingGroupField + '_value eq ' + state.buyingGroupId;
+        const orderBy = f.displayOrder + ' asc,' + f.promotionStartDate + ' desc';
+        const path = CONFIG.entitySets.promotionHeader + '?$select=' + select + '&$filter=' + encodeURIComponent(filter) + '&$orderby=' + encodeURIComponent(orderBy);
+        const result = await webApiGet(path);
+        state.promotions = result.value || [];
+      }
+
+      async function loadPromotionLines() {
+        const f = CONFIG.fields;
+        const promotionIds = state.promotions.map(function (p) {
+          return normalizeGuid(p[f.promotionHeaderId]);
+        }).filter(Boolean);
+
+        state.linesByPromotion = {};
+        if (!promotionIds.length) return;
+
+        const chunkSize = 20;
+        for (let i = 0; i < promotionIds.length; i += chunkSize) {
+          const chunk = promotionIds.slice(i, i + chunkSize);
+          const filter = chunk.map(function (id) {
+            return '_' + CONFIG.promotionLineHeaderField + '_value eq ' + id;
+          }).join(' or ');
+
+          const select = [
+            f.promotionLineId,
+            f.productCode,
+            f.productName,
+            f.discountPercent,
+            f.comment,
+            f.sortOrder,
+            f.featured,
+            '_' + CONFIG.promotionLineHeaderField + '_value'
+          ].join(',');
+
+          const orderBy = f.sortOrder + ' asc';
+          const path = CONFIG.entitySets.promotionLine + '?$select=' + select + '&$filter=' + encodeURIComponent(filter) + '&$orderby=' + encodeURIComponent(orderBy);
+          const result = await webApiGet(path);
+
+          (result.value || []).forEach(function (line) {
+            const promotionId = normalizeGuid(line['_' + CONFIG.promotionLineHeaderField + '_value']);
+            if (!state.linesByPromotion[promotionId]) state.linesByPromotion[promotionId] = [];
+            state.linesByPromotion[promotionId].push(line);
+          });
+        }
+      }
+
+      function getFilteredPromotions() {
+        if (state.filter === 'all') return state.promotions.slice();
+        return state.promotions.filter(function (promotion) {
+          const statusValue = promotion[CONFIG.promotionStatusField];
+          return getStatusLabel(statusValue).toLowerCase() === state.filter;
+        });
+      }
+
+      function updateSummary(filteredPromotions) {
+        els.ctxBuyingGroupName.textContent = state.buyingGroupName || 'N/A';
+
+        const activeCount = state.promotions.filter(function (p) {
+          return p[CONFIG.promotionStatusField] === 100000002;
+        }).length;
+        els.ctxActiveCount.textContent = String(activeCount);
+
+        const lineCount = state.promotions.reduce(function (total, promotion) {
+          const promotionId = normalizeGuid(promotion[CONFIG.fields.promotionHeaderId]);
+          return total + ((state.linesByPromotion[promotionId] || []).length);
+        }, 0);
+        els.ctxLineCount.textContent = String(lineCount);
+
+        els.toolbarMeta.textContent = 'Showing ' + filteredPromotions.length + ' promotion(s)';
+      }
+
+      function getBannerDownloadUrl(recordId) {
+        const clientUrl = getClientUrl();
+        if (!clientUrl || !recordId || !CONFIG.fileConfig.fileLogicalName) return null;
+
+        return clientUrl +
+          '/api/data/v9.2/' +
+          CONFIG.entitySets.promotionHeader +
+          '(' + recordId + ')/' +
+          CONFIG.fileConfig.fileLogicalName +
+          '/$value';
+      }
+
+      function getPromotionImageHtml(promotion) {
+        if (!CONFIG.fileConfig.enabled || !CONFIG.fileConfig.fileLogicalName) {
+          return '<div class="promo-image-wrap"><div class="promo-image-fallback">' + escapeHtml(CONFIG.fileConfig.fallbackText) + '</div><div class="image-chip">Optional Banner</div></div>';
+        }
+
+        const recordId = normalizeGuid(promotion[CONFIG.fields.promotionHeaderId]);
+        const fileName = CONFIG.fileConfig.fileNameField ? promotion[CONFIG.fileConfig.fileNameField] : null;
+
+        if (!fileName || !recordId) {
+          return '<div class="promo-image-wrap"><div class="promo-image-fallback">' + escapeHtml(CONFIG.fileConfig.fallbackText) + '</div><div class="image-chip">Optional Banner</div></div>';
+        }
+
+        const bannerUrl = getBannerDownloadUrl(recordId);
+
+        return '<div class="promo-image-wrap"><img class="promo-image" src="' + escapeHtml(bannerUrl) + '" alt="Promotion banner" /><div class="image-chip">Banner Image</div></div>';
+      }
+
+      function renderPromotions() {
+        const f = CONFIG.fields;
+        const promotions = getFilteredPromotions();
+        updateSummary(promotions);
+
+        if (!promotions.length) {
+          els.promoList.innerHTML = '';
+          showMessage('No promotions found for the selected filter.', false);
+          return;
+        }
+
+        hideMessage();
+
+        els.promoList.innerHTML = promotions.map(function (promotion) {
+          const promotionId = normalizeGuid(promotion[f.promotionHeaderId]);
+          const statusValue = promotion[CONFIG.promotionStatusField];
+          const statusLabel = getStatusLabel(statusValue);
+          const lines = state.linesByPromotion[promotionId] || [];
+          const promoTitle = promotion[f.promotionName] || promotion[f.promotionNamePrimary] || 'Promotion';
+          const safeHeaderComment = promotion[f.headerComment] || 'No header comment provided.';
+          const imageHtml = getPromotionImageHtml(promotion);
+
+          const linesHtml = lines.length
+            ? lines.map(function (line) {
+                return '<div class="line-row">' +
+                  '<div class="line-code">' + escapeHtml(line[f.productCode] || '') + '</div>' +
+                  '<div>' + escapeHtml(line[f.productName] || '') + '</div>' +
+                  '<div class="line-discount">' + escapeHtml(formatNumber(line[f.discountPercent])) + '%</div>' +
+                  '<div class="line-comment">' + escapeHtml(line[f.comment] || '') + '</div>' +
+                '</div>';
+              }).join('')
+            : '<div class="line-row"><div class="line-code">-</div><div>No promotion lines found.</div><div class="line-discount">-</div><div class="line-comment">-</div></div>';
+
+          const actionHtml = state.entityName === CONFIG.accountEntity
+            ? ''
+            : '<div class="actions"><button class="btn js-open-promotion" data-id="' + escapeHtml(promotionId) + '">Open Promotion</button></div>';
+
+          return '' +
+            '<article class="promo-card card-shell" data-id="' + escapeHtml(promotionId) + '">' +
+              imageHtml +
+              '<div class="promo-body">' +
+                '<div class="promo-top">' +
+                  '<div>' +
+                    '<h2 class="promo-title">' + escapeHtml(promoTitle) + '</h2>' +
+                    '<p class="promo-subtitle">' + escapeHtml(promotion[f.activity] || '') + '</p>' +
+                  '</div>' +
+                  '<span class="status-badge ' + getStatusClass(statusValue) + '">' + escapeHtml(statusLabel) + '</span>' +
+                '</div>' +
+                '<div class="promo-meta">' +
+                  '<div class="meta-box"><div class="meta-label">Buy Period</div><div class="meta-value">' + escapeHtml(promotion[f.buyPeriod] || 'N/A') + '</div></div>' +
+                  '<div class="meta-box"><div class="meta-label">Promotion Period</div><div class="meta-value">' + escapeHtml(formatDate(promotion[f.promotionStartDate])) + ' - ' + escapeHtml(formatDate(promotion[f.promotionEndDate])) + '</div></div>' +
+                  '<div class="meta-box"><div class="meta-label">Scan</div><div class="meta-value">' + escapeHtml(formatNumber(promotion[f.scanPercent])) + '%</div></div>' +
+                  '<div class="meta-box"><div class="meta-label">Action</div><div class="meta-value">' + escapeHtml(promotion[f.action] || 'N/A') + '</div></div>' +
+                '</div>' +
+                '<div class="promo-note">' + escapeHtml(safeHeaderComment) + '</div>' +
+                '<div class="line-section">' +
+                  '<div class="line-header"><div>Code</div><div>Product</div><div>Discount</div><div>Comment</div></div>' +
+                  '<div class="line-table">' + linesHtml + '</div>' +
+                '</div>' +
+                '<div class="promo-footer">' +
+                  '<div class="footer-meta">' + lines.length + ' product line(s)</div>' +
+                  actionHtml +
+                '</div>' +
+              '</div>' +
+            '</article>';
+        }).join('');
+
+        bindPromotionButtons();
+      }
+
+      function bindPromotionButtons() {
+        Array.prototype.slice.call(document.querySelectorAll('.js-open-promotion')).forEach(function (button) {
+          button.addEventListener('click', function () {
+            openPromotionRecord(button.getAttribute('data-id'));
+          });
+        });
+      }
+
+      function setFilter(filterValue) {
+        state.filter = filterValue;
+        els.filterButtons.forEach(function (button) {
+          button.classList.toggle('active', button.getAttribute('data-filter') === filterValue);
+        });
+        renderPromotions();
+      }
+
+      function openPromotionRecord(recordId) {
+        try {
+          if (window.parent && window.parent.Xrm && window.parent.Xrm.Navigation) {
+            window.parent.Xrm.Navigation.openForm({
+              entityName: CONFIG.promotionHeaderEntity,
+              entityId: recordId
+            });
+            return;
+          }
+          throw new Error('Xrm.Navigation is not available.');
+        } catch (e) {
+          showMessage('Could not open the Promotion record: ' + e.message, true);
+        }
+      }
+
+      function openNewPromotionForm() {
+        try {
+          if (state.entityName !== CONFIG.buyingGroupEntity) {
+            throw new Error('New Promotion is available only on the Buying Group form.');
+          }
+
+          if (!state.buyingGroupId) {
+            throw new Error('Buying Group context is not resolved.');
+          }
+
+          if (window.parent && window.parent.Xrm && window.parent.Xrm.Navigation) {
+            const formOptions = {
+              entityName: CONFIG.promotionHeaderEntity,
+              useQuickCreateForm: false
+            };
+
+            const formParameters = {};
+            formParameters[CONFIG.promotionHeaderBuyingGroupField] = state.buyingGroupId;
+            formParameters[CONFIG.promotionHeaderBuyingGroupField + 'name'] = state.buyingGroupName || '';
+            formParameters[CONFIG.promotionHeaderBuyingGroupField + 'type'] = CONFIG.buyingGroupOpenEntity;
+
+            window.parent.Xrm.Navigation.openForm(formOptions, formParameters);
+            return;
+          }
+
+          throw new Error('Xrm.Navigation is not available.');
+        } catch (e) {
+          showMessage('Could not open a new Promotion form: ' + e.message, true);
+        }
+      }
+
+      async function refreshAll() {
+        els.loadingState.classList.remove('hidden');
+        els.promoList.innerHTML = '';
+        hideMessage();
+
+        try {
+          await resolveBuyingGroupContext();
+          await loadPromotions();
+          await loadPromotionLines();
+          renderPromotions();
+        } catch (e) {
+          console.error(e);
+          showMessage(e.message || 'An unexpected error occurred.', true);
+        } finally {
+          els.loadingState.classList.add('hidden');
+        }
+      }
+
+      function wireEvents() {
+        els.btnRefresh.addEventListener('click', refreshAll);
+        els.btnNewPromotion.addEventListener('click', openNewPromotionForm);
+        els.filterButtons.forEach(function (button) {
+          button.addEventListener('click', function () {
+            setFilter(button.getAttribute('data-filter'));
+          });
+        });
+      }
+
+      wireEvents();
+      refreshAll();
+    })();
+  </script>
+</body>
+</html>
