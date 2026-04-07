@@ -1,0 +1,25 @@
+-----turn on admin mode and switch off background processing------------
+
+Install-Module Microsoft.PowerApps.Administration.PowerShell -Scope CurrentUser -Force
+Install-Module Microsoft.PowerApps.PowerShell -AllowClobber -Scope CurrentUser -Force
+
+Add-PowerAppsAccount -Endpoint prod
+
+Get-AdminPowerAppEnvironment | Select-Object DisplayName, EnvironmentName
+
+$envName = "PASTE-UAT-ENVIRONMENT-ID-HERE"
+
+Set-AdminPowerAppEnvironmentRuntimeState `
+    -EnvironmentName $envName `
+    -RuntimeState AdminMode `
+    -BackgroundOperationsState Disabled `
+    -WaitUntilFinished $true
+
+
+------------switch off admin mode and switch on background processes-----------
+
+Set-AdminPowerAppEnvironmentRuntimeState `
+    -EnvironmentName $envName `
+    -RuntimeState Enabled `
+    -BackgroundOperationsState Enabled `
+    -WaitUntilFinished $true
