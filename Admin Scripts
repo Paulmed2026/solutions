@@ -1,3 +1,106 @@
+
+///////////////////////////////////////////////
+
+# ------------------------------------------------------------
+# PROD COPY -> UAT integration inventory
+# ------------------------------------------------------------
+
+Install-Module Microsoft.PowerApps.Administration.PowerShell -Scope CurrentUser -Force
+Install-Module Microsoft.PowerApps.PowerShell -AllowClobber -Scope CurrentUser -Force
+Install-Module Az.Accounts -Scope CurrentUser -Force
+
+Add-PowerAppsAccount -Endpoint prod
+Connect-AzAccount
+
+$envName = "YOUR-ENVIRONMENT-ID"
+$orgUrl  = "https://YOURORG.crm.dynamics.com"
+
+# ---------- Power Platform admin data ----------
+$enabledFlows = Get-AdminFlow -EnvironmentName $envName |
+    Where-Object { $_.Enabled -eq $true } |
+    Select-Object DisplayName, FlowName, Enabled, CreatedTime, LastModifiedTime
+
+$connections = Get-AdminPowerAppConnection -EnvironmentName $envName |
+    Select-Object DisplayName, ConnectorName, ConnectionName, CreatedTime, CreatedBy
+
+$customConnectors = Get-AdminPowerAppConnector -EnvironmentName $envName |
+    Select-Object DisplayName, ConnectorName, CreatedTime, CreatedBy
+
+# ---------- Dataverse Web API auth ----------
+$token = (Get-AzAccessToken -ResourceUrl $orgUrl).Token
+$headers = @{
+    Authorization    = "Bearer $token"
+    Accept           = "application/json"
+    "OData-Version"  = "4.0"
+    "OData-MaxVersion" = "4.0"
+}
+
+function Get-DataverseRows {
+    param([string]$Uri)
+
+    $all = @()
+    do {
+        $resp = Invoke-RestMethod -Method Get -Uri $Uri -Headers $headers
+        if ($resp.value) { $all += $resp.value }
+        $Uri = $resp.'@odata.nextLink'
+    } while ($Uri)
+
+    return $all
+}
+
+# ---------- Environment variables ----------
+$envVarUri = "$orgUrl/api/data/v9.2/environmentvariabledefinitions?`$select=schemaname,displayname,defaultvalue,type&`$expand=environmentvariabledefinition_environmentvariablevalue(`$select=value)"
+$environmentVariables = Get-DataverseRows -Uri $envVarUri
+
+# ---------- Enabled plug-in steps ----------
+$pluginStepUri = "$orgUrl/api/data/v9.2/sdkmessageprocessingsteps?`$select=name,sdkmessageprocessingstepid,statecode,statuscode,stage,mode,rank,createdon,modifiedon&`$filter=statecode eq 0"
+$enabledPluginSteps = Get-DataverseRows -Uri $pluginStepUri
+
+# ---------- Activated classic workflows ----------
+$workflowUri = "$orgUrl/api/data/v9.2/workflows?`$select=name,workflowid,category,mode,primaryentity,statecode,statuscode,createdon,modifiedon&`$filter=category eq 0 and statecode eq 1"
+$activeClassicWorkflows = Get-DataverseRows -Uri $workflowUri
+
+# ---------- Service endpoints / webhooks ----------
+$serviceEndpointUri = "$orgUrl/api/data/v9.2/serviceendpoints?`$select=name,serviceendpointid,authtype,contract,namespaceaddress,path,createdon,modifiedon"
+$serviceEndpoints = Get-DataverseRows -Uri $serviceEndpointUri
+
+# ---------- Mailboxes ----------
+$mailboxUri = "$orgUrl/api/data/v9.2/mailboxes?`$select=name,mailboxid,emailaddress,enabledforincomingemail,enabledforoutgoingemail,actdeliverymethod,incomingemaildeliverymethod,outgoingemaildeliverymethod"
+$mailboxes = Get-DataverseRows -Uri $mailboxUri
+
+# ---------- Export ----------
+$enabledFlows            | Export-Csv ".\01-EnabledFlows.csv" -NoTypeInformation
+$connections             | Export-Csv ".\02-Connections.csv" -NoTypeInformation
+$customConnectors        | Export-Csv ".\03-CustomConnectors.csv" -NoTypeInformation
+$enabledPluginSteps      | Export-Csv ".\04-EnabledPluginSteps.csv" -NoTypeInformation
+$activeClassicWorkflows  | Export-Csv ".\05-ActiveClassicWorkflows.csv" -NoTypeInformation
+$serviceEndpoints        | Export-Csv ".\06-ServiceEndpoints.csv" -NoTypeInformation
+$mailboxes               | Export-Csv ".\07-Mailboxes.csv" -NoTypeInformation
+
+$environmentVariables |
+    ForEach-Object {
+        [PSCustomObject]@{
+            SchemaName   = $_.schemaname
+            DisplayName  = $_.displayname
+            DefaultValue = $_.defaultvalue
+            CurrentValue = ($_.environmentvariabledefinition_environmentvariablevalue | Select-Object -First 1 -ExpandProperty value)
+            Type         = $_.type
+        }
+    } | Export-Csv ".\08-EnvironmentVariables.csv" -NoTypeInformation
+
+
+
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
 # ------------------------------------------------------------
 # ACTIVE / ENABLED integrations only
 # - Enabled cloud flows
