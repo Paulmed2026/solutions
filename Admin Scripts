@@ -101,9 +101,18 @@ $environmentVariables |
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
+Quick Flow Disable 
 
+$envName = "YOUR-ENVIRONMENT-ID"
 
+Get-AdminFlow -EnvironmentName $envName |
+    Where-Object { $_.Enabled -eq $true } |
+    ForEach-Object {
+        Disable-AdminFlow -EnvironmentName $envName -FlowName $_.FlowName
+        Write-Host "Disabled flow: $($_.DisplayName)"
+    }
 
+////////////////////////////////////////////////////////////////////
 
 
 
