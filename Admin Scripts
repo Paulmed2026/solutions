@@ -1,0 +1,100 @@
+# ------------------------------------------------------------
+# ACTIVE / ENABLED integrations only
+# - Enabled cloud flows
+# - Activated classic workflows
+# - Enabled plug-in steps
+# ------------------------------------------------------------
+
+# Run in Windows PowerShell 5.x
+# Install once if needed:
+# Install-Module Microsoft.PowerApps.Administration.PowerShell -Scope CurrentUser
+# Install-Module Microsoft.PowerApps.PowerShell -AllowClobber -Scope CurrentUser
+# Install-Module Az.Accounts -Scope CurrentUser
+
+# ---------------------------
+# 1) Sign in
+# ---------------------------
+Add-PowerAppsAccount -Endpoint prod
+Connect-AzAccount
+
+# ---------------------------
+# 2) Set environment info
+# ---------------------------
+$envName = "YOUR-ENVIRONMENT-ID"              # example: Default-xxxx or your env GUID/name
+$orgUrl  = "https://YOURORG.crm.dynamics.com" # your Dataverse org URL
+
+# ---------------------------
+# 3) Enabled cloud flows only
+# ---------------------------
+$enabledCloudFlows = Get-AdminFlow -EnvironmentName $envName |
+    Where-Object { $_.Enabled -eq $true } |
+    Select-Object DisplayName, FlowName, CreatedTime, LastModifiedTime, Enabled
+
+# ---------------------------
+# 4) Dataverse Web API auth
+# ---------------------------
+$token = (Get-AzAccessToken -ResourceUrl $orgUrl).Token
+$headers = @{
+    Authorization = "Bearer $token"
+    Accept        = "application/json"
+    "OData-Version" = "4.0"
+    "OData-MaxVersion" = "4.0"
+}
+
+function Get-DataverseRows {
+    param(
+        [string]$Uri
+    )
+
+    $all = @()
+
+    do {
+        $resp = Invoke-RestMethod -Method Get -Uri $Uri -Headers $headers
+        if ($resp.value) {
+            $all += $resp.value
+        }
+        $Uri = $resp.'@odata.nextLink'
+    } while ($Uri)
+
+    return $all
+}
+
+# ---------------------------
+# 5) Activated classic workflows only
+# category = 0 => Workflow
+# statecode = 1 => Activated
+# ---------------------------
+$classicWorkflowUri = "$orgUrl/api/data/v9.2/workflows?`$select=name,workflowid,category,mode,primaryentity,statecode,statuscode,createdon,modifiedon&`$filter=category eq 0 and statecode eq 1"
+
+$activeClassicWorkflows = Get-DataverseRows -Uri $classicWorkflowUri |
+    Select-Object name, workflowid, category, mode, primaryentity, statecode, statuscode, createdon, modifiedon
+
+# ---------------------------
+# 6) Enabled plug-in steps only
+# statecode = 0 => Enabled
+# ---------------------------
+$pluginStepUri = "$orgUrl/api/data/v9.2/sdkmessageprocessingsteps?`$select=name,sdkmessageprocessingstepid,statecode,statuscode,stage,mode,rank,createdon,modifiedon&`$filter=statecode eq 0"
+
+$enabledPluginSteps = Get-DataverseRows -Uri $pluginStepUri |
+    Select-Object name, sdkmessageprocessingstepid, statecode, statuscode, stage, mode, rank, createdon, modifiedon
+
+# ---------------------------
+# 7) Output to screen
+# ---------------------------
+Write-Host "`n=== ENABLED CLOUD FLOWS ===" -ForegroundColor Cyan
+$enabledCloudFlows | Format-Table -AutoSize
+
+Write-Host "`n=== ACTIVATED CLASSIC WORKFLOWS ===" -ForegroundColor Cyan
+$activeClassicWorkflows | Format-Table -AutoSize
+
+Write-Host "`n=== ENABLED PLUGIN STEPS ===" -ForegroundColor Cyan
+$enabledPluginSteps | Format-Table -AutoSize
+
+# ---------------------------
+# 8) Export to CSV
+# ---------------------------
+$enabledCloudFlows       | Export-Csv ".\Enabled-CloudFlows.csv" -NoTypeInformation
+$activeClassicWorkflows  | Export-Csv ".\Activated-ClassicWorkflows.csv" -NoTypeInformation
+$enabledPluginSteps      | Export-Csv ".\Enabled-PluginSteps.csv" -NoTypeInformation
+
+Write-Host "`nDone. CSV files exported to current folder." -ForegroundColor Green
