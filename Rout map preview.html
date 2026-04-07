@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Metagenics Territory Route Planner Preview</title>
+  <style>
+    :root{
+      --bg:#f4f7fb;
+      --panel:#ffffff;
+      --panel-soft:#f8fbff;
+      --text:#10233f;
+      --muted:#6d7d95;
+      --line:#e4ebf3;
+      --brand:#2b6ff7;
+      --brand2:#7a5cff;
+      --teal:#0ea5a8;
+      --green:#16a34a;
+      --amber:#f59e0b;
+      --red:#dc2626;
+      --shadow:0 14px 34px rgba(16,35,63,.08);
+      --radius:24px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:"Segoe UI", Arial, sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at top right, rgba(43,111,247,.08), transparent 28%),
+        radial-gradient(circle at top left, rgba(122,92,255,.07), transparent 20%),
+        var(--bg);
+    }
+    .wrap{max-width:1580px;margin:0 auto;padding:24px}
+    .card{
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+    }
+    .hero{
+      background:
+        radial-gradient(circle at 90% 10%, rgba(255,255,255,.18), transparent 22%),
+        linear-gradient(135deg,#10233f 0%, #17408a 56%, #2b6ff7 100%);
+      color:#fff;
+      padding:28px 30px;
+      overflow:hidden;
+      position:relative;
+    }
+    .hero:after{
+      content:"";
+      position:absolute;
+      right:-72px;bottom:-72px;width:240px;height:240px;border-radius:50%;
+      background:rgba(255,255,255,.08);
+    }
+    .hero-top{
+      display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;
+    }
+    .hero h1{margin:0;font-size:34px;letter-spacing:-.02em}
+    .hero p{margin:8px 0 0;color:rgba(255,255,255,.84);max-width:780px;line-height:1.45}
+    .meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+    .tag{
+      padding:10px 14px;border-radius:999px;background:rgba(255,255,255,.12);
+      border:1px solid rgba(255,255,255,.14);font-size:12px;font-weight:700;
+    }
+    .hero-actions{display:flex;gap:10px;flex-wrap:wrap}
+    .btn{
+      padding:12px 16px;border:none;border-radius:14px;font-weight:700;cursor:pointer
+    }
+    .btn.primary{background:#fff;color:#17356d}
+    .btn.secondary{background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.16)}
+
+    .kpis{
+      display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-top:18px;
+    }
+    .kpi{
+      padding:18px;
+      min-height:112px;
+      background:linear-gradient(180deg,#fff 0%, #fbfdff 100%);
+      position:relative;overflow:hidden
+    }
+    .kpi:after{
+      content:"";position:absolute;right:-20px;bottom:-20px;width:74px;height:74px;border-radius:50%;
+      background:radial-gradient(circle, rgba(43,111,247,.08), transparent 62%);
+    }
+    .kpi .label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+    .kpi .value{font-size:30px;font-weight:900;margin-top:12px}
+    .kpi .note{font-size:13px;color:var(--muted);margin-top:8px;line-height:1.35}
+
+    .layout{
+      display:grid;grid-template-columns:1.05fr .95fr;gap:18px;margin-top:18px;
+    }
+    .stack{display:grid;gap:18px}
+    .section{padding:22px}
+    .head{
+      display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px
+    }
+    .head h2{margin:0;font-size:20px;letter-spacing:-.02em}
+    .pill{
+      background:#eef4ff;border:1px solid #dce8ff;color:#2855b8;
+      padding:8px 12px;border-radius:999px;font-size:12px;font-weight:700;
+    }
+
+    .filters{
+      display:grid;grid-template-columns:repeat(4,1fr);gap:12px;
+    }
+    .filter{
+      background:linear-gradient(180deg,#fff 0%, #f9fbfe 100%);
+      border:1px solid var(--line);border-radius:18px;padding:14px 14px;
+    }
+    .filter .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+    .filter .val{margin-top:8px;font-weight:800;font-size:15px}
+    .filter .sub{margin-top:5px;font-size:12px;color:var(--muted)}
+
+    .map-panel{
+      background:linear-gradient(180deg,#fbfdff 0%, #f4f8ff 100%);
+      border:1px solid #dbe7fa;border-radius:22px;padding:16px;
+    }
+    .map{
+      position:relative;height:520px;border-radius:20px;overflow:hidden;
+      background:
+        linear-gradient(90deg, rgba(43,111,247,.05) 1px, transparent 1px) 0 0 / 56px 56px,
+        linear-gradient(rgba(43,111,247,.05) 1px, transparent 1px) 0 0 / 56px 56px,
+        radial-gradient(circle at 25% 20%, rgba(14,165,168,.08), transparent 18%),
+        radial-gradient(circle at 72% 34%, rgba(122,92,255,.08), transparent 18%),
+        #eef5ff;
+      border:1px solid #d9e7ff;
+    }
+    .road{
+      position:absolute;background:#cfd9ea;border-radius:999px;
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.45);
+    }
+    .road.v{width:12px;height:100%}
+    .road.h{height:12px;width:100%}
+    .road.route{
+      background:linear-gradient(90deg, #2b6ff7, #7a5cff);
+      height:8px;box-shadow:0 0 0 4px rgba(43,111,247,.08)
+    }
+    .pin{
+      position:absolute;transform:translate(-50%,-100%);
+      width:32px;height:32px;border-radius:16px 16px 16px 0;rotate:-45deg;
+      display:grid;place-items:center;color:#fff;font-weight:900;font-size:12px;
+      box-shadow:0 10px 18px rgba(16,35,63,.16);
+    }
+    .pin span{rotate:45deg}
+    .pin.blue{background:var(--brand)}
+    .pin.violet{background:var(--brand2)}
+    .pin.teal{background:var(--teal)}
+    .pin.green{background:var(--green)}
+    .pin.amber{background:var(--amber)}
+    .mini-kpis{
+      display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px
+    }
+    .mini{
+      background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px 12px;
+    }
+    .mini .m-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+    .mini .m-value{margin-top:8px;font-size:20px;font-weight:900}
+    .mini .m-note{margin-top:5px;font-size:12px;color:var(--muted)}
+
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:11px 10px;border-bottom:1px solid var(--line);text-align:left;font-size:13px;vertical-align:top}
+    th{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+    .badge{display:inline-block;padding:6px 10px;border-radius:999px;font-weight:800;font-size:11px;letter-spacing:.04em}
+    .b-red{background:#fee2e2;color:#991b1b}
+    .b-amber{background:#fef3c7;color:#92400e}
+    .b-green{background:#dcfce7;color:#166534}
+    .b-blue{background:#dbeafe;color:#1d4ed8}
+    .b-purple{background:#ede9fe;color:#5b21b6}
+
+    .steps{display:grid;gap:10px}
+    .step{
+      display:grid;grid-template-columns:46px 1fr auto;gap:12px;align-items:center;
+      background:#fff;border:1px solid var(--line);border-radius:18px;padding:12px 14px;
+    }
+    .num{
+      width:46px;height:46px;border-radius:16px;display:grid;place-items:center;
+      background:linear-gradient(135deg,#edf3ff,#f1edff);border:1px solid #e3eafb;
+      font-weight:900;color:#244b9a;
+    }
+    .step b{display:block;font-size:14px}
+    .step span{display:block;font-size:12px;color:var(--muted);margin-top:4px;line-height:1.35}
+    .step .dist{font-size:12px;font-weight:800;color:#244b9a;background:#edf3ff;border-radius:12px;padding:8px 10px}
+
+    .two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+    .ai-panel{
+      background:linear-gradient(180deg,#f9fbff 0%, #eef5ff 100%);
+      border:1px solid #d9e7ff;border-radius:22px;padding:18px;
+    }
+    .story{display:grid;gap:10px}
+    .story-card{
+      background:#fff;border:1px solid #e6eef8;border-radius:16px;padding:13px 14px;
+    }
+    .story-card .mini-head{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:6px}
+    .story-card .txt{font-size:14px;line-height:1.45}
+    .quick{
+      display:grid;grid-template-columns:repeat(4,1fr);gap:12px
+    }
+    .tile{
+      padding:16px;border-radius:18px;background:linear-gradient(180deg,#fff 0%, #f9fbfe 100%);
+      border:1px solid var(--line);text-align:center
+    }
+    .icon{
+      width:50px;height:50px;border-radius:16px;margin:0 auto 10px;display:grid;place-items:center;
+      font-size:22px;background:linear-gradient(135deg,#edf3ff,#f1edff);border:1px solid #e3eafb;
+    }
+    .tile b{display:block;font-size:14px}
+    .tile span{display:block;font-size:12px;color:var(--muted);margin-top:6px;line-height:1.35}
+    .foot{font-size:12px;color:var(--muted);margin-top:12px}
+    @media (max-width:1300px){
+      .kpis{grid-template-columns:repeat(3,1fr)}
+      .layout,.two{grid-template-columns:1fr}
+      .filters,.mini-kpis,.quick{grid-template-columns:1fr 1fr}
+    }
+    @media (max-width:860px){
+      .kpis,.filters,.mini-kpis,.quick{grid-template-columns:1fr}
+      .hero h1{font-size:28px}
+      .step{grid-template-columns:46px 1fr}
+      .step .dist{grid-column:2}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="card hero">
+      <div class="hero-top">
+        <div>
+          <h1>Territory Route Planner</h1>
+          <p>Sample preview of a route planning experience for Metagenics field reps. Designed to prioritize the best commercial stops, not just the shortest drive.</p>
+          <div class="meta">
+            <div class="tag">Rep: Sarah Mitchell</div>
+            <div class="tag">Territory: Austin / San Antonio</div>
+            <div class="tag">Plan Date: Apr 7, 2026</div>
+            <div class="tag">Priority Set: At Risk + Growth + Close Stage</div>
+          </div>
+        </div>
+        <div class="hero-actions">
+          <button class="btn primary">Optimize Route</button>
+          <button class="btn secondary">Save Route</button>
+          <button class="btn secondary">Start Navigation</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="kpis">
+      <div class="card kpi">
+        <div class="label">Selected Stops</div>
+        <div class="value">5</div>
+        <div class="note">Balanced across risk, growth, and close-stage accounts</div>
+      </div>
+      <div class="card kpi">
+        <div class="label">Total Drive Time</div>
+        <div class="value">3h 18m</div>
+        <div class="note">Including traffic estimate</div>
+      </div>
+      <div class="card kpi">
+        <div class="label">Total Distance</div>
+        <div class="value">126 mi</div>
+        <div class="note">Optimized for same-day field coverage</div>
+      </div>
+      <div class="card kpi">
+        <div class="label">Revenue Protected</div>
+        <div class="value">$54K</div>
+        <div class="note">At-risk accounts included in route</div>
+      </div>
+      <div class="card kpi">
+        <div class="label">Growth Opportunity</div>
+        <div class="value">$37K</div>
+        <div class="note">Whitespace potential covered by route</div>
+      </div>
+    </section>
+
+    <section class="layout">
+      <div class="stack">
+        <div class="card section">
+          <div class="head">
+            <h2>Filters & Route Criteria</h2>
+            <span class="pill">Dataverse-backed rules</span>
+          </div>
+          <div class="filters">
+            <div class="filter">
+              <div class="lbl">Priority Accounts</div>
+              <div class="val">At Risk + Strategic</div>
+              <div class="sub">High commercial protection first</div>
+            </div>
+            <div class="filter">
+              <div class="lbl">Visit Window</div>
+              <div class="val">9:00 AM – 5:30 PM</div>
+              <div class="sub">One-day field route</div>
+            </div>
+            <div class="filter">
+              <div class="lbl">Route Mode</div>
+              <div class="val">Commercial Optimized</div>
+              <div class="sub">Not just shortest distance</div>
+            </div>
+            <div class="filter">
+              <div class="lbl">Rep Goal</div>
+              <div class="val">Protect + Expand</div>
+              <div class="sub">Revenue recovery and whitespace</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card section">
+          <div class="head">
+            <h2>Optimized Stop Sequence</h2>
+            <span class="pill">Recommended order</span>
+          </div>
+          <div class="steps">
+            <div class="step">
+              <div class="num">1</div>
+              <div>
+                <b>Hill Country Integrative</b>
+                <span>At Risk • No order in 46 days • Reactivation + training visit</span>
+              </div>
+              <div class="dist">12 mi</div>
+            </div>
+            <div class="step">
+              <div class="num">2</div>
+              <div>
+                <b>Austin Functional Wellness</b>
+                <span>Watchlist • Probiotic decline • Bundle conversation</span>
+              </div>
+              <div class="dist">9 mi</div>
+            </div>
+            <div class="step">
+              <div class="num">3</div>
+              <div>
+                <b>Lonestar Wellness Center</b>
+                <span>Healthy • Vitamin D whitespace • Mid-tier expansion opportunity</span>
+              </div>
+              <div class="dist">21 mi</div>
+            </div>
+            <div class="step">
+              <div class="num">4</div>
+              <div>
+                <b>Riverbend Functional Care</b>
+                <span>Watchlist • Omega-3 upsell • Follow-up overdue</span>
+              </div>
+              <div class="dist">17 mi</div>
+            </div>
+            <div class="step">
+              <div class="num">5</div>
+              <div>
+                <b>San Antonio Vitality Clinic</b>
+                <span>Close Stage • $17K opportunity • Final in-person push</span>
+              </div>
+              <div class="dist">67 mi</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="two">
+          <div class="card section">
+            <div class="head">
+              <h2>Why This Route Was Chosen</h2>
+              <span class="pill">AI reasoning</span>
+            </div>
+            <div class="ai-panel">
+              <div class="story">
+                <div class="story-card">
+                  <div class="mini-head">Revenue Protection</div>
+                  <div class="txt">The first two stops address accounts with delayed reorder behavior and the highest near-term revenue risk.</div>
+                </div>
+                <div class="story-card">
+                  <div class="mini-head">Growth Coverage</div>
+                  <div class="txt">The middle of the route focuses on accounts with strong whitespace opportunity in Vitamin D and bundle expansion.</div>
+                </div>
+                <div class="story-card">
+                  <div class="mini-head">Pipeline Conversion</div>
+                  <div class="txt">The final stop is a close-stage account with a strong chance to convert through an in-person meeting.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card section">
+            <div class="head">
+              <h2>Quick Actions</h2>
+              <span class="pill">Rep workflow</span>
+            </div>
+            <div class="quick">
+              <div class="tile"><div class="icon">📍</div><b>Start Route</b><span>Launch navigation in Google Maps or Waze</span></div>
+              <div class="tile"><div class="icon">📝</div><b>Save Route</b><span>Create route record and daily plan</span></div>
+              <div class="tile"><div class="icon">📅</div><b>Book Visits</b><span>Create visit activities for each stop</span></div>
+              <div class="tile"><div class="icon">📤</div><b>Share Plan</b><span>Send route summary to manager</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stack">
+        <div class="card section">
+          <div class="head">
+            <h2>Map Preview</h2>
+            <span class="pill">Sample route visualization</span>
+          </div>
+          <div class="map-panel">
+            <div class="map">
+              <div class="road v" style="left:18%;top:0"></div>
+              <div class="road v" style="left:44%;top:0"></div>
+              <div class="road v" style="left:71%;top:0"></div>
+              <div class="road h" style="left:0;top:22%"></div>
+              <div class="road h" style="left:0;top:48%"></div>
+              <div class="road h" style="left:0;top:75%"></div>
+
+              <div class="road route" style="left:18%;top:22%;width:26%"></div>
+              <div class="road route" style="left:44%;top:22%;width:0;height:26%;transform:translateX(-2px)"></div>
+              <div class="road route" style="left:44%;top:48%;width:27%"></div>
+              <div class="road route" style="left:71%;top:48%;width:0;height:27%;transform:translateX(-2px)"></div>
+              <div class="road route" style="left:44%;top:75%;width:27%"></div>
+
+              <div class="pin blue" style="left:18%;top:22%"><span>1</span></div>
+              <div class="pin violet" style="left:44%;top:22%"><span>2</span></div>
+              <div class="pin teal" style="left:44%;top:48%"><span>3</span></div>
+              <div class="pin green" style="left:71%;top:48%"><span>4</span></div>
+              <div class="pin amber" style="left:71%;top:75%"><span>5</span></div>
+            </div>
+            <div class="mini-kpis">
+              <div class="mini">
+                <div class="m-label">Departure</div>
+                <div class="m-value">8:45 AM</div>
+                <div class="m-note">Suggested start time</div>
+              </div>
+              <div class="mini">
+                <div class="m-label">Arrival</div>
+                <div class="m-value">4:18 PM</div>
+                <div class="m-note">Estimated route completion</div>
+              </div>
+              <div class="mini">
+                <div class="m-label">Visit Time</div>
+                <div class="m-value">4h 05m</div>
+                <div class="m-note">Total planned customer time</div>
+              </div>
+              <div class="mini">
+                <div class="m-label">Coverage</div>
+                <div class="m-value">91%</div>
+                <div class="m-note">Priority target coverage</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card section">
+          <div class="head">
+            <h2>Selected Account Detail</h2>
+            <span class="pill">Stop list preview</span>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Stop</th>
+                <th>Account</th>
+                <th>Status</th>
+                <th>Reason Selected</th>
+                <th>Estimated Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td>Hill Country Integrative</td>
+                <td><span class="badge b-red">At Risk</span></td>
+                <td>Reorder delayed + training opportunity</td>
+                <td>$21K protected</td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td>Austin Functional Wellness</td>
+                <td><span class="badge b-amber">Watch</span></td>
+                <td>Probiotic decline + bundle expansion</td>
+                <td>$11K upside</td>
+              </tr>
+              <tr>
+                <td>3</td>
+                <td>Lonestar Wellness Center</td>
+                <td><span class="badge b-green">Healthy</span></td>
+                <td>Vitamin D whitespace target</td>
+                <td>$9K upside</td>
+              </tr>
+              <tr>
+                <td>4</td>
+                <td>Riverbend Functional Care</td>
+                <td><span class="badge b-amber">Watch</span></td>
+                <td>Follow-up overdue + Omega-3 upsell</td>
+                <td>$6K upside</td>
+              </tr>
+              <tr>
+                <td>5</td>
+                <td>San Antonio Vitality Clinic</td>
+                <td><span class="badge b-purple">Close Stage</span></td>
+                <td>High-probability close meeting</td>
+                <td>$17K close value</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="foot">This is a front-end preview using sample data. In Dynamics 365, the route, list, and KPIs would be populated from Dataverse-backed account scoring and routing logic.</div>
+        </div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

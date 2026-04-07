@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Metagenics Customer 360</title>
+  <style>
+    :root{
+      --bg:#f4f7fb;
+      --panel:#ffffff;
+      --panel-2:#f8fbff;
+      --text:#10233f;
+      --muted:#6d7d95;
+      --line:#e4ebf3;
+      --brand:#2b6ff7;
+      --brand-2:#7a5cff;
+      --green:#16a34a;
+      --amber:#f59e0b;
+      --red:#dc2626;
+      --teal:#0ea5a8;
+      --shadow:0 10px 30px rgba(16,35,63,.08);
+      --radius:22px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background:
+        radial-gradient(circle at top right, rgba(43,111,247,.08), transparent 28%),
+        radial-gradient(circle at top left, rgba(122,92,255,.07), transparent 20%),
+        var(--bg);
+      color:var(--text);
+    }
+    .wrap{max-width:1520px;margin:0 auto;padding:24px}
+    .hero{
+      background:linear-gradient(135deg,#10233f 0%, #17408a 55%, #2b6ff7 100%);
+      color:#fff;
+      border-radius:30px;
+      padding:28px 30px;
+      box-shadow:var(--shadow);
+      position:relative;
+      overflow:hidden;
+    }
+    .hero:after{
+      content:"";
+      position:absolute;
+      inset:auto -80px -80px auto;
+      width:280px;height:280px;border-radius:50%;
+      background:rgba(255,255,255,.08);
+    }
+    .hero-top{
+      display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap;
+    }
+    .hero h1{margin:0 0 6px;font-size:34px;line-height:1.1}
+    .hero p{margin:0;color:rgba(255,255,255,.82);font-size:15px}
+    .chip-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+    .chip{
+      padding:10px 14px;border-radius:999px;
+      background:rgba(255,255,255,.12);
+      border:1px solid rgba(255,255,255,.14);
+      font-size:13px;
+      backdrop-filter: blur(8px);
+    }
+    .hero-actions{display:flex;gap:10px;flex-wrap:wrap}
+    .btn{
+      border:none;border-radius:14px;padding:12px 16px;font-weight:600;
+      cursor:pointer;box-shadow:0 8px 20px rgba(0,0,0,.12)
+    }
+    .btn.primary{background:#fff;color:#123266}
+    .btn.secondary{background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.18)}
+    .grid-kpi{
+      display:grid;grid-template-columns:repeat(6,1fr);gap:16px;margin-top:20px
+    }
+    .card{
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+    }
+    .kpi{
+      padding:18px 18px 16px;
+      min-height:118px;
+      position:relative;overflow:hidden;
+    }
+    .kpi .label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+    .kpi .value{font-size:30px;font-weight:800;margin-top:10px}
+    .kpi .sub{font-size:13px;color:var(--muted);margin-top:8px}
+    .status-dot{
+      width:12px;height:12px;border-radius:50%;display:inline-block;margin-right:8px;vertical-align:middle
+    }
+    .green{background:var(--green)}
+    .amber{background:var(--amber)}
+    .red{background:var(--red)}
+
+    .layout{
+      display:grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap:18px;
+      margin-top:18px;
+    }
+    .stack{display:grid;gap:18px}
+    .section{padding:22px}
+    .section-title{
+      display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap
+    }
+    .section-title h2{
+      margin:0;font-size:20px;display:flex;align-items:center;gap:10px
+    }
+    .pill{
+      background:#eef4ff;border:1px solid #dce8ff;color:#2855b8;
+      padding:8px 12px;border-radius:999px;font-size:12px;font-weight:700
+    }
+
+    .insight-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:18px}
+    .ai-panel{
+      background:linear-gradient(180deg,#f9fbff 0%, #eef5ff 100%);
+      border:1px solid #d9e7ff;border-radius:22px;padding:18px;
+    }
+    .ai-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:12px}
+    .ai-head strong{font-size:17px}
+    .badge{
+      padding:7px 10px;border-radius:999px;font-size:12px;font-weight:700
+    }
+    .badge.red{background:#fee2e2;color:#991b1b}
+    .badge.green{background:#dcfce7;color:#166534}
+    .badge.amber{background:#fef3c7;color:#92400e}
+    .ai-list{display:grid;gap:10px}
+    .ai-item{
+      background:#fff;border:1px solid #e6eef8;border-radius:16px;padding:12px 14px
+    }
+    .ai-item .head{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:5px}
+    .ai-item .body{font-size:14px;line-height:1.45}
+    .next-actions{display:grid;gap:10px}
+    .action{
+      display:flex;justify-content:space-between;align-items:center;gap:12px;
+      border:1px solid var(--line);background:#fff;border-radius:16px;padding:12px 14px
+    }
+    .action .left b{display:block;font-size:14px}
+    .action .left span{display:block;color:var(--muted);font-size:12px;margin-top:4px}
+    .action .go{
+      border:none;background:#edf3ff;color:#244b9a;font-weight:700;border-radius:12px;padding:9px 12px;cursor:pointer
+    }
+
+    .two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+    .chart-card{padding:18px}
+    .chart-title{font-weight:700;font-size:15px;margin-bottom:10px}
+    svg{width:100%;height:auto;display:block}
+    .legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px}
+    .legend span{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+    .sw{width:10px;height:10px;border-radius:50%;display:inline-block}
+
+    .product-table{width:100%;border-collapse:collapse}
+    .product-table th,.product-table td{
+      padding:11px 10px;border-bottom:1px solid var(--line);text-align:left;font-size:13px
+    }
+    .product-table th{color:var(--muted);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+    .trend-up{color:var(--green);font-weight:700}
+    .trend-down{color:var(--red);font-weight:700}
+    .trend-flat{color:var(--amber);font-weight:700}
+
+    .timeline{display:grid;gap:12px}
+    .tl-item{
+      display:grid;grid-template-columns:88px 18px 1fr;gap:12px;align-items:start
+    }
+    .tl-date{font-size:12px;color:var(--muted);padding-top:2px}
+    .tl-mid{position:relative;height:100%}
+    .tl-mid:before{
+      content:"";position:absolute;left:8px;top:0;bottom:-12px;width:2px;background:#d9e2ee
+    }
+    .tl-dot{
+      width:18px;height:18px;border-radius:50%;background:#fff;border:4px solid var(--brand);position:relative;z-index:1
+    }
+    .tl-card{
+      background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px 14px
+    }
+    .tl-card b{display:block;font-size:14px;margin-bottom:4px}
+    .tl-card span{color:var(--muted);font-size:12px}
+    .tl-card p{margin:8px 0 0;font-size:13px;line-height:1.45}
+
+    .action-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+    .quick{
+      background:linear-gradient(180deg,#fff 0%, #f9fbfe 100%);
+      border:1px solid var(--line);
+      border-radius:18px;padding:16px;text-align:center;cursor:pointer
+    }
+    .quick .icon{
+      width:48px;height:48px;border-radius:16px;margin:0 auto 10px;
+      display:grid;place-items:center;font-size:22px;background:#edf3ff
+    }
+    .quick b{display:block;font-size:14px}
+    .quick span{display:block;color:var(--muted);font-size:12px;margin-top:5px;line-height:1.35}
+
+    .footnote{
+      font-size:12px;color:var(--muted);margin-top:12px
+    }
+
+    @media (max-width: 1280px){
+      .grid-kpi{grid-template-columns:repeat(3,1fr)}
+      .layout{grid-template-columns:1fr}
+      .insight-grid,.two-col,.action-grid{grid-template-columns:1fr 1fr}
+    }
+    @media (max-width: 860px){
+      .grid-kpi,.insight-grid,.two-col,.action-grid{grid-template-columns:1fr}
+      .tl-item{grid-template-columns:70px 18px 1fr}
+      .hero h1{font-size:28px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero card">
+      <div class="hero-top">
+        <div>
+          <h1>Metagenics Customer 360</h1>
+          <p>AI-assisted account intelligence dashboard for field sales and account growth inside Dynamics 365</p>
+          <div class="chip-row">
+            <div class="chip">Account: Austin Functional Wellness</div>
+            <div class="chip">Type: Practitioner Clinic</div>
+            <div class="chip">Specialty: Functional Medicine</div>
+            <div class="chip">Owner: Sarah Mitchell</div>
+          </div>
+        </div>
+        <div class="hero-actions">
+          <button class="btn primary">Generate AI Prep</button>
+          <button class="btn secondary">Log Visit</button>
+          <button class="btn secondary">Create Follow-Up</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid-kpi">
+      <div class="card kpi">
+        <div class="label">Account Health</div>
+        <div class="value"><span class="status-dot amber"></span>72</div>
+        <div class="sub">Moderate risk • Last order cycle exceeded by 17 days</div>
+      </div>
+      <div class="card kpi">
+        <div class="label">YTD Revenue</div>
+        <div class="value">$184K</div>
+        <div class="sub">+12.8% vs last year</div>
+      </div>
+      <div class="card kpi">
+        <div class="label">Average Order Value</div>
+        <div class="value">$6.2K</div>
+        <div class="sub">Stable over last 90 days</div>
+      </div>
+      <div class="card kpi">
+        <div class="label">Last Order Date</div>
+        <div class="value">38 days</div>
+        <div class="sub">Typical cadence: every 21 days</div>
+      </div>
+      <div class="card kpi">
+        <div class="label">Last Visit</div>
+        <div class="value">22 days</div>
+        <div class="sub">No training session in 60 days</div>
+      </div>
+      <div class="card kpi">
+        <div class="label">Open Opportunities</div>
+        <div class="value">3</div>
+        <div class="sub">$47K weighted pipeline</div>
+      </div>
+    </section>
+
+    <section class="layout">
+      <div class="stack">
+        <div class="card section">
+          <div class="section-title">
+            <h2>🧠 Account Intelligence & Recommendations</h2>
+            <span class="pill">AI summary refreshed 8 mins ago</span>
+          </div>
+          <div class="insight-grid">
+            <div class="ai-panel">
+              <div class="ai-head">
+                <strong>AI Summary</strong>
+                <span class="badge amber">Attention Needed</span>
+              </div>
+              <div class="ai-list">
+                <div class="ai-item">
+                  <div class="head">Risk Signal</div>
+                  <div class="body">No order in <b>38 days</b>. This account normally orders every <b>21 days</b>.</div>
+                </div>
+                <div class="ai-item">
+                  <div class="head">Product Decline</div>
+                  <div class="body">Probiotic category volume is down <b>22%</b> over the last 2 months.</div>
+                </div>
+                <div class="ai-item">
+                  <div class="head">Growth Opportunity</div>
+                  <div class="body">Similar functional medicine clinics are increasing revenue with <b>Vitamin D</b> and <b>Immune Support bundles</b>.</div>
+                </div>
+                <div class="ai-item">
+                  <div class="head">Coaching Insight</div>
+                  <div class="body">This account responds best after <b>in-person education visits</b> followed by a product recommendation within 3 days.</div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="chart-title" style="margin-bottom:12px;">Next Best Actions</div>
+              <div class="next-actions">
+                <div class="action">
+                  <div class="left">
+                    <b>Schedule in-person visit this week</b>
+                    <span>Priority: High • Due in 2 days</span>
+                  </div>
+                  <button class="go">Open</button>
+                </div>
+                <div class="action">
+                  <div class="left">
+                    <b>Recommend Immune Support Bundle</b>
+                    <span>Priority: High • Revenue potential: $9.5K</span>
+                  </div>
+                  <button class="go">Open</button>
+                </div>
+                <div class="action">
+                  <div class="left">
+                    <b>Create product training session</b>
+                    <span>Priority: Medium • Last training: 61 days ago</span>
+                  </div>
+                  <button class="go">Open</button>
+                </div>
+                <div class="action">
+                  <div class="left">
+                    <b>Follow up on Omega-3 opportunity</b>
+                    <span>Priority: Medium • Stage: Engage</span>
+                  </div>
+                  <button class="go">Open</button>
+                </div>
+              </div>
+              <div class="footnote">Tip: wire these actions to command buttons, Power Automate endpoints, or record URLs in Dynamics 365.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div class="card chart-card">
+            <div class="section-title" style="margin-bottom:12px">
+              <h2 style="font-size:18px">📈 Revenue Trend</h2>
+              <span class="pill">12 Months</span>
+            </div>
+            <svg viewBox="0 0 520 260" aria-label="Revenue trend">
+              <defs>
+                <linearGradient id="area1" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#2b6ff7" stop-opacity=".25"/>
+                  <stop offset="100%" stop-color="#2b6ff7" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <g>
+                <line x1="40" y1="220" x2="500" y2="220" stroke="#d9e2ee"/>
+                <line x1="40" y1="170" x2="500" y2="170" stroke="#eef3f8"/>
+                <line x1="40" y1="120" x2="500" y2="120" stroke="#eef3f8"/>
+                <line x1="40" y1="70" x2="500" y2="70" stroke="#eef3f8"/>
+              </g>
+              <path d="M40,180 L82,164 L124,156 L166,148 L208,132 L250,138 L292,122 L334,116 L376,94 L418,102 L460,82 L500,74 L500,220 L40,220 Z"
+                    fill="url(#area1)"/>
+              <path d="M40,180 L82,164 L124,156 L166,148 L208,132 L250,138 L292,122 L334,116 L376,94 L418,102 L460,82 L500,74"
+                    fill="none" stroke="#2b6ff7" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+              <g fill="#2b6ff7">
+                <circle cx="40" cy="180" r="4"/><circle cx="82" cy="164" r="4"/><circle cx="124" cy="156" r="4"/>
+                <circle cx="166" cy="148" r="4"/><circle cx="208" cy="132" r="4"/><circle cx="250" cy="138" r="4"/>
+                <circle cx="292" cy="122" r="4"/><circle cx="334" cy="116" r="4"/><circle cx="376" cy="94" r="4"/>
+                <circle cx="418" cy="102" r="4"/><circle cx="460" cy="82" r="4"/><circle cx="500" cy="74" r="4"/>
+              </g>
+              <g fill="#7a8596" font-size="11">
+                <text x="35" y="238">Jan</text><text x="77" y="238">Feb</text><text x="119" y="238">Mar</text>
+                <text x="161" y="238">Apr</text><text x="203" y="238">May</text><text x="245" y="238">Jun</text>
+                <text x="287" y="238">Jul</text><text x="329" y="238">Aug</text><text x="371" y="238">Sep</text>
+                <text x="413" y="238">Oct</text><text x="455" y="238">Nov</text><text x="495" y="238">Dec</text>
+              </g>
+            </svg>
+            <div class="legend">
+              <span><i class="sw" style="background:#2b6ff7"></i>Revenue trend</span>
+              <span>YTD growth: <b style="color:#16a34a">+12.8%</b></span>
+            </div>
+          </div>
+
+          <div class="card chart-card">
+            <div class="section-title" style="margin-bottom:12px">
+              <h2 style="font-size:18px">🧪 Product Mix</h2>
+              <span class="pill">Top 5 Categories</span>
+            </div>
+            <svg viewBox="0 0 520 260" aria-label="Product mix">
+              <g fill="#eef3f8">
+                <rect x="150" y="35" width="300" height="22" rx="11"/>
+                <rect x="150" y="75" width="300" height="22" rx="11"/>
+                <rect x="150" y="115" width="300" height="22" rx="11"/>
+                <rect x="150" y="155" width="300" height="22" rx="11"/>
+                <rect x="150" y="195" width="300" height="22" rx="11"/>
+              </g>
+              <g fill="#2b6ff7">
+                <rect x="150" y="35" width="246" height="22" rx="11"/>
+                <rect x="150" y="75" width="192" height="22" rx="11"/>
+              </g>
+              <g fill="#7a5cff">
+                <rect x="150" y="115" width="170" height="22" rx="11"/>
+              </g>
+              <g fill="#0ea5a8">
+                <rect x="150" y="155" width="126" height="22" rx="11"/>
+              </g>
+              <g fill="#f59e0b">
+                <rect x="150" y="195" width="108" height="22" rx="11"/>
+              </g>
+              <g fill="#334155" font-size="13" font-weight="600">
+                <text x="20" y="50">Probiotics</text>
+                <text x="20" y="90">Omega-3</text>
+                <text x="20" y="130">Multivitamins</text>
+                <text x="20" y="170">Vitamin D</text>
+                <text x="20" y="210">Immune Support</text>
+              </g>
+              <g fill="#64748b" font-size="12">
+                <text x="410" y="50">41%</text>
+                <text x="356" y="90">32%</text>
+                <text x="334" y="130">28%</text>
+                <text x="290" y="170">21%</text>
+                <text x="272" y="210">18%</text>
+              </g>
+            </svg>
+            <div class="legend">
+              <span><i class="sw" style="background:#2b6ff7"></i>Core</span>
+              <span><i class="sw" style="background:#7a5cff"></i>Growth</span>
+              <span><i class="sw" style="background:#0ea5a8"></i>Emerging</span>
+              <span><i class="sw" style="background:#f59e0b"></i>Opportunity</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card section">
+          <div class="section-title">
+            <h2>📦 Product Performance & Gap Analysis</h2>
+            <span class="pill">Commercial Intelligence</span>
+          </div>
+          <table class="product-table">
+            <thead>
+              <tr>
+                <th>Product / Category</th>
+                <th>Last 90 Days</th>
+                <th>Trend</th>
+                <th>Gap / Opportunity</th>
+                <th>Suggested Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Probiotics</td>
+                <td>$48.2K</td>
+                <td><span class="trend-down">↓ 22%</span></td>
+                <td>Declining reorder behavior</td>
+                <td>Re-engage with replenishment plan</td>
+              </tr>
+              <tr>
+                <td>Omega-3</td>
+                <td>$31.5K</td>
+                <td><span class="trend-up">↑ 8%</span></td>
+                <td>Upsell potential in bundle</td>
+                <td>Pair with Immune Support discussion</td>
+              </tr>
+              <tr>
+                <td>Vitamin D</td>
+                <td>$14.8K</td>
+                <td><span class="trend-flat">→ Flat</span></td>
+                <td>Underpenetrated vs peer clinics</td>
+                <td>Introduce high-volume protocol use case</td>
+              </tr>
+              <tr>
+                <td>Immune Support</td>
+                <td>$0</td>
+                <td><span class="trend-down">Not Buying</span></td>
+                <td>Strong whitespace opportunity</td>
+                <td>Recommend starter bundle + training</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card section">
+          <div class="section-title">
+            <h2>⚡ Quick Actions</h2>
+            <span class="pill">Rep Workflow</span>
+          </div>
+          <div class="action-grid">
+            <div class="quick"><div class="icon">🧠</div><b>Generate Prep</b><span>Create AI visit briefing</span></div>
+            <div class="quick"><div class="icon">📅</div><b>Schedule Visit</b><span>Book in-person follow-up</span></div>
+            <div class="quick"><div class="icon">📞</div><b>Log Call</b><span>Capture outreach instantly</span></div>
+            <div class="quick"><div class="icon">🎓</div><b>Training Session</b><span>Create educational engagement</span></div>
+            <div class="quick"><div class="icon">💡</div><b>Recommend Product</b><span>Launch product recommendation</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stack">
+        <div class="card section">
+          <div class="section-title">
+            <h2>🤝 Engagement Timeline</h2>
+            <span class="pill">Last 60 Days</span>
+          </div>
+          <div class="timeline">
+            <div class="tl-item">
+              <div class="tl-date">Apr 02</div>
+              <div class="tl-mid"><div class="tl-dot"></div></div>
+              <div class="tl-card">
+                <b>Phone Call with Practice Manager</b>
+                <span>Outcome: Reorder discussion delayed</span>
+                <p>Customer requested a product efficacy refresher before placing next probiotic order.</p>
+              </div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-date">Mar 25</div>
+              <div class="tl-mid"><div class="tl-dot" style="border-color:#7a5cff"></div></div>
+              <div class="tl-card">
+                <b>In-Person Visit</b>
+                <span>Outcome: Positive engagement</span>
+                <p>Rep discussed Omega-3 protocol expansion and identified interest in immune support training.</p>
+              </div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-date">Mar 11</div>
+              <div class="tl-mid"><div class="tl-dot" style="border-color:#0ea5a8"></div></div>
+              <div class="tl-card">
+                <b>Virtual Product Training</b>
+                <span>Attendees: 6 clinic staff</span>
+                <p>Session focused on gut health line. Good adoption potential, but no post-training follow-up logged.</p>
+              </div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-date">Feb 28</div>
+              <div class="tl-mid"><div class="tl-dot" style="border-color:#f59e0b"></div></div>
+              <div class="tl-card">
+                <b>Order Review Email</b>
+                <span>Status: Open</span>
+                <p>Sent summary of prior product performance and proposed updated ordering mix.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card section">
+          <div class="section-title">
+            <h2>🎯 Opportunity & Growth Panel</h2>
+            <span class="pill">Pipeline View</span>
+          </div>
+          <table class="product-table">
+            <thead>
+              <tr>
+                <th>Opportunity</th>
+                <th>Stage</th>
+                <th>Value</th>
+                <th>Risk</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Immune Support Bundle</td>
+                <td>Engage</td>
+                <td>$12K</td>
+                <td><span class="badge amber">Medium</span></td>
+              </tr>
+              <tr>
+                <td>Vitamin D Expansion</td>
+                <td>Prep Call</td>
+                <td>$18K</td>
+                <td><span class="badge green">Low</span></td>
+              </tr>
+              <tr>
+                <td>Quarterly Protocol Program</td>
+                <td>Close</td>
+                <td>$17K</td>
+                <td><span class="badge red">High</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card section">
+          <div class="section-title">
+            <h2>🧭 Account Health Breakdown</h2>
+            <span class="pill">Scored Model</span>
+          </div>
+          <svg viewBox="0 0 520 290" aria-label="Health score">
+            <g>
+              <circle cx="145" cy="145" r="92" fill="none" stroke="#eef3f8" stroke-width="24"/>
+              <circle cx="145" cy="145" r="92" fill="none" stroke="#f59e0b" stroke-width="24"
+                      stroke-linecap="round"
+                      stroke-dasharray="416 578"
+                      transform="rotate(-90 145 145)"/>
+              <text x="145" y="145" text-anchor="middle" font-size="42" font-weight="800" fill="#10233f">72</text>
+              <text x="145" y="172" text-anchor="middle" font-size="13" fill="#64748b">Health Score</text>
+            </g>
+            <g transform="translate(290,40)">
+              <text x="0" y="10" font-size="15" font-weight="700" fill="#10233f">Score Drivers</text>
+              <rect x="0" y="30" width="180" height="12" rx="6" fill="#eef3f8"/>
+              <rect x="0" y="30" width="136" height="12" rx="6" fill="#2b6ff7"/>
+              <text x="0" y="58" font-size="13" fill="#334155">Revenue trend</text>
+              <text x="190" y="58" font-size="13" fill="#334155">76</text>
+
+              <rect x="0" y="82" width="180" height="12" rx="6" fill="#eef3f8"/>
+              <rect x="0" y="82" width="110" height="12" rx="6" fill="#7a5cff"/>
+              <text x="0" y="110" font-size="13" fill="#334155">Engagement recency</text>
+              <text x="190" y="110" font-size="13" fill="#334155">61</text>
+
+              <rect x="0" y="134" width="180" height="12" rx="6" fill="#eef3f8"/>
+              <rect x="0" y="134" width="152" height="12" rx="6" fill="#0ea5a8"/>
+              <text x="0" y="162" font-size="13" fill="#334155">Growth potential</text>
+              <text x="190" y="162" font-size="13" fill="#334155">84</text>
+
+              <rect x="0" y="186" width="180" height="12" rx="6" fill="#eef3f8"/>
+              <rect x="0" y="186" width="92" height="12" rx="6" fill="#f59e0b"/>
+              <text x="0" y="214" font-size="13" fill="#334155">Order cadence</text>
+              <text x="190" y="214" font-size="13" fill="#334155">51</text>
+            </g>
+          </svg>
+        </div>
+
+        <div class="card section">
+          <div class="section-title">
+            <h2>📌 Executive Snapshot</h2>
+            <span class="pill">One-minute read</span>
+          </div>
+          <div class="ai-list">
+            <div class="ai-item">
+              <div class="head">Current Situation</div>
+              <div class="body">Healthy revenue base, but reorder behavior is slipping and growth is concentrated in too few product categories.</div>
+            </div>
+            <div class="ai-item">
+              <div class="head">Main Risk</div>
+              <div class="body">Extended reorder gap could lead to additional probiotic revenue erosion.</div>
+            </div>
+            <div class="ai-item">
+              <div class="head">Biggest Opportunity</div>
+              <div class="body">Bundle-led expansion into Vitamin D and Immune Support through training-led engagement.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="footnote">
+      Sample HTML web resource for a Dynamics 365 Account tab. Replace sample values with live Dataverse / API data and wire actions to commands or flows.
+    </div>
+  </div>
+</body>
+</html>
