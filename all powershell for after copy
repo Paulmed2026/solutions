@@ -1,0 +1,532 @@
+param(
+    [Parameter(Mandatory = $true)]
+    [string]$EnvironmentName,   # Example: 8d996ece-8558-4c4e-b459-a51b3beafdb4
+
+    [Parameter(Mandatory = $true)]
+    [string]$OrgUrl,            # Example: https://contoso.crm.dynamics.com
+
+    [string]$OutputFolder = ".\PostCopy-$(Get-Date -Format 'yyyyMMdd-HHmmss')",
+
+    [string]$EnvVarUpdateCsv = "",
+
+    [string[]]$ProdHints = @(), # Example: @("https://prod-api.contoso.com","https://contoso.sharepoint.com/sites/prod","crm-prod")
+
+    [switch]$ReopenWhenDone
+)
+
+$ErrorActionPreference = "Stop"
+$ProgressPreference = "SilentlyContinue"
+
+# ----------------------------
+# Helpers
+# ----------------------------
+function Write-Step {
+    param([string]$Text)
+    Write-Host "`n=== $Text ===" -ForegroundColor Cyan
+}
+
+function Ensure-Module {
+    param(
+        [Parameter(Mandatory = $true)][string]$Name,
+        [switch]$AllowClobber
+    )
+
+    if (-not (Get-Module -ListAvailable -Name $Name)) {
+        if ($AllowClobber) {
+            Install-Module -Name $Name -Scope CurrentUser -AllowClobber -Force
+        }
+        else {
+            Install-Module -Name $Name -Scope CurrentUser -Force
+        }
+    }
+
+    Import-Module $Name -Force
+}
+
+function New-OutputFolder {
+    param([string]$Path)
+    if (-not (Test-Path $Path)) {
+        New-Item -ItemType Directory -Path $Path -Force | Out-Null
+    }
+}
+
+function Get-DataverseHeaders {
+    param([string]$ResourceUrl)
+
+    $token = (Get-AzAccessToken -ResourceUrl $ResourceUrl).Token
+    return @{
+        Authorization      = "Bearer $token"
+        Accept             = "application/json"
+        "OData-Version"    = "4.0"
+        "OData-MaxVersion" = "4.0"
+    }
+}
+
+function Invoke-DvGetAll {
+    param([Parameter(Mandatory = $true)][string]$Uri)
+
+    $all = @()
+    $next = $Uri
+
+    do {
+        $resp = Invoke-RestMethod -Method Get -Uri $next -Headers $script:DvHeaders
+        if ($resp.value) { $all += $resp.value }
+        $next = $resp.'@odata.nextLink'
+    } while ($next)
+
+    return $all
+}
+
+function Invoke-DvPatch {
+    param(
+        [Parameter(Mandatory = $true)][string]$Uri,
+        [Parameter(Mandatory = $true)][hashtable]$Body
+    )
+
+    $json = $Body | ConvertTo-Json -Depth 20
+    Invoke-RestMethod -Method Patch -Uri $Uri -Headers $script:DvHeaders -ContentType "application/json; charset=utf-8" -Body $json | Out-Null
+}
+
+function Export-IfAny {
+    param(
+        [Parameter(Mandatory = $true)][object[]]$Data,
+        [Parameter(Mandatory = $true)][string]$Path
+    )
+
+    if ($null -eq $Data) {
+        @() | Export-Csv -Path $Path -NoTypeInformation
+    }
+    else {
+        $Data | Export-Csv -Path $Path -NoTypeInformation
+    }
+}
+
+function Find-HintMatch {
+    param(
+        [string]$Text,
+        [string[]]$Hints
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Text)) { return $null }
+
+    foreach ($hint in $Hints) {
+        if (-not [string]::IsNullOrWhiteSpace($hint) -and $Text.ToLower().Contains($hint.ToLower())) {
+            return $hint
+        }
+    }
+
+    return $null
+}
+
+# ----------------------------
+# Normalize inputs
+# ----------------------------
+$OrgUrl = $OrgUrl.TrimEnd("/")
+New-OutputFolder -Path $OutputFolder
+
+# ----------------------------
+# Module setup
+# ----------------------------
+Write-Step "Loading modules"
+Ensure-Module -Name "Microsoft.PowerApps.Administration.PowerShell"
+Ensure-Module -Name "Microsoft.PowerApps.PowerShell" -AllowClobber
+Ensure-Module -Name "Az.Accounts"
+
+# ----------------------------
+# Sign in
+# ----------------------------
+Write-Step "Sign in"
+Add-PowerAppsAccount -Endpoint prod | Out-Null
+Connect-AzAccount | Out-Null
+$script:DvHeaders = Get-DataverseHeaders -ResourceUrl $OrgUrl
+
+# ----------------------------
+# STEP 2 - Force Admin Mode + Background Disabled
+# ----------------------------
+Write-Step "STEP 2 - Force AdminMode and disable background operations"
+Set-AdminPowerAppEnvironmentRuntimeState `
+    -EnvironmentName $EnvironmentName `
+    -RuntimeState AdminMode `
+    -BackgroundOperationsState Disabled `
+    -WaitUntilFinished $true
+
+# ----------------------------
+# STEP 3 - Inventory
+# ----------------------------
+Write-Step "STEP 3 - Inventory integration surfaces"
+
+# Cloud flows
+$enabledFlows = Get-AdminFlow -EnvironmentName $EnvironmentName |
+    Where-Object { $_.Enabled -eq $true } |
+    Select-Object DisplayName, FlowName, Enabled, CreatedTime, LastModifiedTime
+
+# Connections
+$connections = Get-AdminPowerAppConnection -EnvironmentName $EnvironmentName |
+    Select-Object DisplayName, ConnectorName, ConnectionName, CreatedTime, CreatedBy
+
+# Custom connectors
+$customConnectors = Get-AdminPowerAppConnector -EnvironmentName $EnvironmentName |
+    Select-Object DisplayName, ConnectorName, CreatedTime, CreatedBy
+
+# Environment variables
+$envVarDefsRaw = Invoke-DvGetAll -Uri "$OrgUrl/api/data/v9.2/environmentvariabledefinitions?`$select=environmentvariabledefinitionid,schemaname,displayname,defaultvalue,type,modifiedon&`$expand=environmentvariabledefinition_environmentvariablevalue(`$select=environmentvariablevalueid,value,statecode,statuscode,modifiedon)"
+
+$environmentVariables = foreach ($def in $envVarDefsRaw) {
+    $current = $null
+    if ($def.environmentvariabledefinition_environmentvariablevalue) {
+        $current = $def.environmentvariabledefinition_environmentvariablevalue | Select-Object -First 1
+    }
+
+    [PSCustomObject]@{
+        SchemaName      = $def.schemaname
+        DisplayName     = $def.displayname
+        Type            = $def.type
+        DefaultValue    = $def.defaultvalue
+        CurrentValue    = if ($current) { $current.value } else { $null }
+        DefinitionId    = $def.environmentvariabledefinitionid
+        CurrentValueId  = if ($current) { $current.environmentvariablevalueid } else { $null }
+        CurrentState    = if ($current) { $current.statecode } else { $null }
+        ModifiedOn      = $def.modifiedon
+    }
+}
+
+# Classic workflows (activated only)
+$activeClassicWorkflows = Invoke-DvGetAll -Uri "$OrgUrl/api/data/v9.2/workflows?`$select=name,workflowid,category,mode,primaryentity,statecode,statuscode,modifiedon&`$filter=category eq 0 and statecode eq 1" |
+    Select-Object name, workflowid, category, mode, primaryentity, statecode, statuscode, modifiedon
+
+# Enabled plugin steps
+$enabledPluginSteps = Invoke-DvGetAll -Uri "$OrgUrl/api/data/v9.2/sdkmessageprocessingsteps?`$select=name,sdkmessageprocessingstepid,statecode,statuscode,stage,mode,rank,modifiedon&`$filter=statecode eq 0" |
+    Select-Object name, sdkmessageprocessingstepid, statecode, statuscode, stage, mode, rank, modifiedon
+
+# Service endpoints / webhooks / service bus
+$serviceEndpoints = Invoke-DvGetAll -Uri "$OrgUrl/api/data/v9.2/serviceendpoints?`$select=name,serviceendpointid,authtype,contract,namespaceaddress,path,modifiedon" |
+    Select-Object name, serviceendpointid, authtype, contract, namespaceaddress, path, modifiedon
+
+# Mailboxes
+$mailboxes = Invoke-DvGetAll -Uri "$OrgUrl/api/data/v9.2/mailboxes?`$select=name,mailboxid,emailaddress,enabledforincomingemail,enabledforoutgoingemail,enabledforact,incomingemaildeliverymethod,outgoingemaildeliverymethod,actdeliverymethod,modifiedon" |
+    Select-Object name, mailboxid, emailaddress, enabledforincomingemail, enabledforoutgoingemail, enabledforact, incomingemaildeliverymethod, outgoingemaildeliverymethod, actdeliverymethod, modifiedon
+
+# SharePoint sites
+$sharePointSites = Invoke-DvGetAll -Uri "$OrgUrl/api/data/v9.2/sharepointsites?`$select=name,sharepointsiteid,absoluteurl,relativeurl,isdefault,statecode,modifiedon" |
+    Select-Object name, sharepointsiteid, absoluteurl, relativeurl, isdefault, statecode, modifiedon
+
+# SharePoint document locations
+$sharePointDocumentLocations = Invoke-DvGetAll -Uri "$OrgUrl/api/data/v9.2/sharepointdocumentlocations?`$select=name,sharepointdocumentlocationid,absoluteurl,relativeurl,statecode,modifiedon" |
+    Select-Object name, sharepointdocumentlocationid, absoluteurl, relativeurl, statecode, modifiedon
+
+# Export inventory
+Export-IfAny -Data $enabledFlows                -Path (Join-Path $OutputFolder "01-EnabledFlows.csv")
+Export-IfAny -Data $connections                 -Path (Join-Path $OutputFolder "02-Connections.csv")
+Export-IfAny -Data $customConnectors            -Path (Join-Path $OutputFolder "03-CustomConnectors.csv")
+Export-IfAny -Data $environmentVariables        -Path (Join-Path $OutputFolder "04-EnvironmentVariables.csv")
+Export-IfAny -Data $enabledPluginSteps          -Path (Join-Path $OutputFolder "05-EnabledPluginSteps.csv")
+Export-IfAny -Data $activeClassicWorkflows      -Path (Join-Path $OutputFolder "06-ActiveClassicWorkflows.csv")
+Export-IfAny -Data $serviceEndpoints            -Path (Join-Path $OutputFolder "07-ServiceEndpoints.csv")
+Export-IfAny -Data $mailboxes                   -Path (Join-Path $OutputFolder "08-Mailboxes-Before.csv")
+Export-IfAny -Data $sharePointSites             -Path (Join-Path $OutputFolder "09-SharePointSites.csv")
+Export-IfAny -Data $sharePointDocumentLocations -Path (Join-Path $OutputFolder "10-SharePointDocumentLocations.csv")
+
+# Flag likely prod references if hints were supplied
+$flagged = @()
+
+if ($ProdHints.Count -gt 0) {
+    foreach ($row in $environmentVariables) {
+        $text = "$($row.SchemaName) | $($row.DisplayName) | $($row.DefaultValue) | $($row.CurrentValue)"
+        $hit = Find-HintMatch -Text $text -Hints $ProdHints
+        if ($hit) {
+            $flagged += [PSCustomObject]@{
+                Source      = "EnvironmentVariable"
+                Name        = $row.SchemaName
+                MatchedHint = $hit
+                Details     = $text
+            }
+        }
+    }
+
+    foreach ($row in $serviceEndpoints) {
+        $text = "$($row.name) | $($row.namespaceaddress) | $($row.path)"
+        $hit = Find-HintMatch -Text $text -Hints $ProdHints
+        if ($hit) {
+            $flagged += [PSCustomObject]@{
+                Source      = "ServiceEndpoint"
+                Name        = $row.name
+                MatchedHint = $hit
+                Details     = $text
+            }
+        }
+    }
+
+    foreach ($row in $sharePointSites) {
+        $text = "$($row.name) | $($row.absoluteurl) | $($row.relativeurl)"
+        $hit = Find-HintMatch -Text $text -Hints $ProdHints
+        if ($hit) {
+            $flagged += [PSCustomObject]@{
+                Source      = "SharePointSite"
+                Name        = $row.name
+                MatchedHint = $hit
+                Details     = $text
+            }
+        }
+    }
+
+    foreach ($row in $sharePointDocumentLocations) {
+        $text = "$($row.name) | $($row.absoluteurl) | $($row.relativeurl)"
+        $hit = Find-HintMatch -Text $text -Hints $ProdHints
+        if ($hit) {
+            $flagged += [PSCustomObject]@{
+                Source      = "SharePointDocumentLocation"
+                Name        = $row.name
+                MatchedHint = $hit
+                Details     = $text
+            }
+        }
+    }
+}
+
+Export-IfAny -Data $flagged -Path (Join-Path $OutputFolder "11-FlaggedLikelyProdReferences.csv")
+
+# ----------------------------
+# STEP 4 - Disable enabled flows
+# ----------------------------
+Write-Step "STEP 4 - Disable enabled flows"
+
+$flowDisableLog = @()
+
+foreach ($flow in $enabledFlows) {
+    try {
+        Disable-AdminFlow -EnvironmentName $EnvironmentName -FlowName $flow.FlowName
+        $flowDisableLog += [PSCustomObject]@{
+            DisplayName = $flow.DisplayName
+            FlowName    = $flow.FlowName
+            Result      = "Disabled"
+            Error       = ""
+        }
+        Write-Host "Disabled flow: $($flow.DisplayName)"
+    }
+    catch {
+        $flowDisableLog += [PSCustomObject]@{
+            DisplayName = $flow.DisplayName
+            FlowName    = $flow.FlowName
+            Result      = "Failed"
+            Error       = $_.Exception.Message
+        }
+        Write-Warning "Failed to disable flow: $($flow.DisplayName) :: $($_.Exception.Message)"
+    }
+}
+
+Export-IfAny -Data $flowDisableLog -Path (Join-Path $OutputFolder "12-FlowDisableLog.csv")
+
+# ----------------------------
+# STEP 5 - Set mailboxes to None
+# ----------------------------
+Write-Step "STEP 5 - Set mailbox synchronization to None"
+
+$unsafeMailboxes = Invoke-DvGetAll -Uri "$OrgUrl/api/data/v9.2/mailboxes?`$select=name,mailboxid,emailaddress,enabledforincomingemail,enabledforoutgoingemail,enabledforact,incomingemaildeliverymethod,outgoingemaildeliverymethod,actdeliverymethod&`$filter=enabledforincomingemail eq true or enabledforoutgoingemail eq true or enabledforact eq true or incomingemaildeliverymethod ne 0 or outgoingemaildeliverymethod ne 0 or actdeliverymethod ne 2"
+
+$mailboxPatchLog = @()
+
+foreach ($mb in $unsafeMailboxes) {
+    $uri = "$OrgUrl/api/data/v9.2/mailboxes($($mb.mailboxid))"
+
+    try {
+        Invoke-DvPatch -Uri $uri -Body @{
+            incomingemaildeliverymethod = 0
+            outgoingemaildeliverymethod = 0
+            actdeliverymethod           = 2
+            enabledforincomingemail     = $false
+            enabledforoutgoingemail     = $false
+            enabledforact               = $false
+        }
+
+        $mailboxPatchLog += [PSCustomObject]@{
+            Name         = $mb.name
+            MailboxId    = $mb.mailboxid
+            EmailAddress = $mb.emailaddress
+            Result       = "Updated"
+            Error        = ""
+        }
+
+        Write-Host "Mailbox set to None: $($mb.name)"
+    }
+    catch {
+        $mailboxPatchLog += [PSCustomObject]@{
+            Name         = $mb.name
+            MailboxId    = $mb.mailboxid
+            EmailAddress = $mb.emailaddress
+            Result       = "Failed"
+            Error        = $_.Exception.Message
+        }
+
+        Write-Warning "Failed mailbox update: $($mb.name) :: $($_.Exception.Message)"
+    }
+}
+
+Export-IfAny -Data $mailboxPatchLog -Path (Join-Path $OutputFolder "13-MailboxUpdateLog.csv")
+
+$mailboxesAfter = Invoke-DvGetAll -Uri "$OrgUrl/api/data/v9.2/mailboxes?`$select=name,mailboxid,emailaddress,enabledforincomingemail,enabledforoutgoingemail,enabledforact,incomingemaildeliverymethod,outgoingemaildeliverymethod,actdeliverymethod,modifiedon" |
+    Select-Object name, mailboxid, emailaddress, enabledforincomingemail, enabledforoutgoingemail, enabledforact, incomingemaildeliverymethod, outgoingemaildeliverymethod, actdeliverymethod, modifiedon
+
+Export-IfAny -Data $mailboxesAfter -Path (Join-Path $OutputFolder "14-Mailboxes-After.csv")
+
+# ----------------------------
+# STEP 6 - Review CSVs
+# ----------------------------
+Write-Step "STEP 6 - Review exported CSVs"
+
+Write-Host "Output folder: $OutputFolder" -ForegroundColor Yellow
+Write-Host "Review these files now:"
+Write-Host "  02-Connections.csv"
+Write-Host "  03-CustomConnectors.csv"
+Write-Host "  04-EnvironmentVariables.csv"
+Write-Host "  07-ServiceEndpoints.csv"
+Write-Host "  09-SharePointSites.csv"
+Write-Host "  10-SharePointDocumentLocations.csv"
+Write-Host "  11-FlaggedLikelyProdReferences.csv (if you supplied -ProdHints)"
+
+# Open folder for convenience
+Start-Process $OutputFolder
+
+Read-Host "After reviewing the CSVs, press Enter to continue to STEP 7"
+
+# ----------------------------
+# STEP 7 - Update environment variables from CSV
+# ----------------------------
+Write-Step "STEP 7 - Apply environment variable updates from CSV (if provided)"
+
+$envVarUpdateLog = @()
+
+if ([string]::IsNullOrWhiteSpace($EnvVarUpdateCsv) -or -not (Test-Path $EnvVarUpdateCsv)) {
+    Write-Host "No EnvVarUpdateCsv provided. Skipping automated environment variable updates."
+}
+else {
+    $updates = Import-Csv $EnvVarUpdateCsv
+
+    foreach ($u in $updates) {
+        $match = $environmentVariables | Where-Object { $_.SchemaName -eq $u.SchemaName } | Select-Object -First 1
+
+        if (-not $match) {
+            $envVarUpdateLog += [PSCustomObject]@{
+                SchemaName = $u.SchemaName
+                NewValue   = $u.NewValue
+                Method     = "NotFound"
+                Result     = "Skipped"
+                Error      = "SchemaName not found in environment"
+            }
+            continue
+        }
+
+        try {
+            if (-not [string]::IsNullOrWhiteSpace($match.CurrentValueId)) {
+                # Prefer updating the existing current value row
+                Invoke-DvPatch -Uri "$OrgUrl/api/data/v9.2/environmentvariablevalues($($match.CurrentValueId))" -Body @{
+                    value = "$($u.NewValue)"
+                }
+
+                $envVarUpdateLog += [PSCustomObject]@{
+                    SchemaName = $u.SchemaName
+                    NewValue   = $u.NewValue
+                    Method     = "CurrentValue"
+                    Result     = "Updated"
+                    Error      = ""
+                }
+            }
+            else {
+                # Fallback: update defaultvalue on the definition if no current value row exists
+                Invoke-DvPatch -Uri "$OrgUrl/api/data/v9.2/environmentvariabledefinitions($($match.DefinitionId))" -Body @{
+                    defaultvalue = "$($u.NewValue)"
+                }
+
+                $envVarUpdateLog += [PSCustomObject]@{
+                    SchemaName = $u.SchemaName
+                    NewValue   = $u.NewValue
+                    Method     = "DefinitionDefaultFallback"
+                    Result     = "Updated"
+                    Error      = ""
+                }
+            }
+
+            Write-Host "Updated environment variable: $($u.SchemaName)"
+        }
+        catch {
+            $envVarUpdateLog += [PSCustomObject]@{
+                SchemaName = $u.SchemaName
+                NewValue   = $u.NewValue
+                Method     = "Error"
+                Result     = "Failed"
+                Error      = $_.Exception.Message
+            }
+
+            Write-Warning "Failed environment variable update: $($u.SchemaName) :: $($_.Exception.Message)"
+        }
+    }
+}
+
+Export-IfAny -Data $envVarUpdateLog -Path (Join-Path $OutputFolder "15-EnvironmentVariableUpdateLog.csv")
+
+# Refresh env var export after updates
+$envVarDefsAfterRaw = Invoke-DvGetAll -Uri "$OrgUrl/api/data/v9.2/environmentvariabledefinitions?`$select=environmentvariabledefinitionid,schemaname,displayname,defaultvalue,type,modifiedon&`$expand=environmentvariabledefinition_environmentvariablevalue(`$select=environmentvariablevalueid,value,statecode,statuscode,modifiedon)"
+
+$environmentVariablesAfter = foreach ($def in $envVarDefsAfterRaw) {
+    $current = $null
+    if ($def.environmentvariabledefinition_environmentvariablevalue) {
+        $current = $def.environmentvariabledefinition_environmentvariablevalue | Select-Object -First 1
+    }
+
+    [PSCustomObject]@{
+        SchemaName      = $def.schemaname
+        DisplayName     = $def.displayname
+        Type            = $def.type
+        DefaultValue    = $def.defaultvalue
+        CurrentValue    = if ($current) { $current.value } else { $null }
+        DefinitionId    = $def.environmentvariabledefinitionid
+        CurrentValueId  = if ($current) { $current.environmentvariablevalueid } else { $null }
+        CurrentState    = if ($current) { $current.statecode } else { $null }
+        ModifiedOn      = $def.modifiedon
+    }
+}
+
+Export-IfAny -Data $environmentVariablesAfter -Path (Join-Path $OutputFolder "16-EnvironmentVariables-After.csv")
+
+# ----------------------------
+# STEP 8 - Manual connector / SharePoint review
+# ----------------------------
+Write-Step "STEP 8 - Manual connector / SharePoint remediation"
+
+Write-Host "Do these manual tasks now:"
+Write-Host "  1. Review/update connection references and connector-backed settings"
+Write-Host "  2. Review custom connectors that still point to prod endpoints or prod credentials"
+Write-Host "  3. Re-save custom connectors if they depend on updated environment variables"
+Write-Host "  4. Review SharePoint integration / document management settings if UAT must not hit prod SharePoint"
+
+Read-Host "After you finish the manual remediation above, press Enter to continue to STEP 9"
+
+# ----------------------------
+# STEP 9 - Reopen environment (optional)
+# ----------------------------
+Write-Step "STEP 9 - Reopen environment"
+
+if ($ReopenWhenDone) {
+    Set-AdminPowerAppEnvironmentRuntimeState `
+        -EnvironmentName $EnvironmentName `
+        -RuntimeState Enabled `
+        -BackgroundOperationsState Enabled `
+        -WaitUntilFinished $true
+
+    Write-Host "Environment reopened." -ForegroundColor Green
+}
+else {
+    Write-Host "Environment left in AdminMode." -ForegroundColor Yellow
+    Write-Host "When ready, reopen it with:"
+    Write-Host ""
+    Write-Host "Set-AdminPowerAppEnvironmentRuntimeState -EnvironmentName `"$EnvironmentName`" -RuntimeState Enabled -BackgroundOperationsState Enabled -WaitUntilFinished `$true"
+}
+
+# ----------------------------
+# Summary
+# ----------------------------
+Write-Step "Summary"
+Write-Host "Output folder: $OutputFolder" -ForegroundColor Green
+Write-Host "Enabled flows found: $($enabledFlows.Count)"
+Write-Host "Unsafe mailboxes updated: $($unsafeMailboxes.Count)"
+Write-Host "Environment variables updated: $($envVarUpdateLog | Where-Object {$_.Result -eq 'Updated'} | Measure-Object).Count"
+Write-Host "Done."
