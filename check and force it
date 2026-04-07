@@ -1,0 +1,17 @@
+$envName = "YOUR-UAT-ENVIRONMENT-ID"
+
+Get-AdminPowerAppEnvironment -EnvironmentName $envName | 
+Select-Object DisplayName, EnvironmentName, RuntimeState, BackgroundOperationsState
+
+
+
+
+
+
+
+
+  Set-AdminPowerAppEnvironmentRuntimeState `
+  -EnvironmentName $envName `
+  -RuntimeState AdminMode `
+  -BackgroundOperationsState Disabled `
+  -WaitUntilFinished $true
