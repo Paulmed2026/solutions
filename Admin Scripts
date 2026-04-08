@@ -1,4 +1,46 @@
 
+My recommendation for your full copy
+
+For Prod → UAT, I would do it in this exact order:
+
+Let the copy finish
+Confirm UAT is still in AdminMode with background operations disabled
+Run the inventory script above
+Disable all enabled flows
+Set all UAT mailboxes to None
+Review exported CSVs for:
+prod URLs
+prod client IDs
+prod SharePoint sites
+prod webhook/service bus endpoints
+prod SQL/HTTP/custom connector connections
+Update environment variables and connector settings
+Resave any custom connectors that depend on updated environment variables
+Only after that, bring background operations back and reopen UAT
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 This script is based on Microsoft-supported admin PowerShell cmdlets for flows, connections, and connectors, plus Dataverse Web API entity sets for environment variables,
 service endpoints, workflows, mailboxes, and plug-in steps. serviceendpoints, environmentvariablevalues,
 and related Dataverse entities support Web API access, and sdkmessageprocessingstep.statecode = 0 is enabled while workflow.statecode = 1 is activated.
