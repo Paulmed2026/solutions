@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Metagenics Sales Agent 360 - Original Palette</title>
+  <style>
+    :root{
+      --bg:#f4f7fb;
+      --panel:#ffffff;
+      --panel-soft:#f8fbff;
+      --text:#10233f;
+      --muted:#6d7d95;
+      --line:#e4ebf3;
+      --brand:#2b6ff7;
+      --brand2:#7a5cff;
+      --green:#16a34a;
+      --amber:#f59e0b;
+      --red:#dc2626;
+      --teal:#0ea5a8;
+      --shadow:0 12px 30px rgba(16,35,63,.08);
+      --radius:24px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:"Segoe UI", Arial, sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at top right, rgba(43,111,247,.08), transparent 28%),
+        radial-gradient(circle at top left, rgba(122,92,255,.07), transparent 20%),
+        var(--bg);
+    }
+    .wrap{max-width:1560px;margin:0 auto;padding:24px}
+    .top{
+      display:grid;
+      grid-template-columns:1.15fr .85fr;
+      gap:18px;
+      margin-bottom:18px;
+    }
+    .card{
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+    }
+
+    .hero{
+      padding:28px 30px;
+      background:
+        radial-gradient(circle at 92% 10%, rgba(255,255,255,.18), transparent 20%),
+        linear-gradient(135deg,#10233f 0%, #17408a 56%, #2b6ff7 100%);
+      color:#fff;
+      position:relative;
+      overflow:hidden;
+    }
+    .hero:after{
+      content:"";
+      position:absolute;
+      right:-70px;bottom:-70px;
+      width:240px;height:240px;border-radius:50%;
+      background:rgba(255,255,255,.08);
+    }
+    .hero h1{margin:0;font-size:34px;letter-spacing:-.02em}
+    .hero p{margin:8px 0 0;color:rgba(255,255,255,.84);font-size:15px;line-height:1.45;max-width:760px}
+    .meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+    .tag{
+      padding:10px 14px;border-radius:999px;
+      background:rgba(255,255,255,.12);
+      border:1px solid rgba(255,255,255,.14);
+      font-size:12px;font-weight:700;
+    }
+    .hero-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+    .btn{
+      padding:12px 16px;border:none;border-radius:14px;font-weight:700;cursor:pointer
+    }
+    .btn.primary{background:#fff;color:#17356d}
+    .btn.secondary{background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.16)}
+
+    .score{
+      padding:22px 24px;
+      background:linear-gradient(180deg,#ffffff 0%, #f7faff 100%);
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:18px;
+      align-items:center;
+    }
+    .score .eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+    .score .big{font-size:48px;font-weight:900;margin-top:10px;line-height:1}
+    .score .caption{font-size:14px;color:var(--muted);margin-top:8px;line-height:1.45}
+    .ring{
+      width:132px;height:132px;border-radius:50%;
+      background:conic-gradient(var(--brand) 0 78%, #eaf0f7 78% 100%);
+      display:grid;place-items:center;position:relative;
+    }
+    .ring:after{
+      content:"";position:absolute;inset:14px;border-radius:50%;
+      background:#fff;border:1px solid var(--line);
+    }
+    .ring span{position:relative;z-index:1;font-size:28px;font-weight:900;color:var(--text)}
+
+    .kpis{
+      display:grid;
+      grid-template-columns:repeat(6,1fr);
+      gap:16px;
+      margin-bottom:18px;
+    }
+    .kpi{
+      padding:18px;
+      min-height:118px;
+      background:linear-gradient(180deg,#fff 0%, #fbfdff 100%);
+      position:relative;
+      overflow:hidden;
+    }
+    .kpi:after{
+      content:"";
+      position:absolute;
+      right:-20px;bottom:-20px;
+      width:78px;height:78px;border-radius:50%;
+      background:radial-gradient(circle, rgba(43,111,247,.08), transparent 62%);
+    }
+    .kpi .label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+    .kpi .value{font-size:30px;font-weight:900;margin-top:12px}
+    .kpi .note{font-size:13px;color:var(--muted);margin-top:8px;line-height:1.35}
+    .signal{display:inline-flex;align-items:center;gap:8px}
+    .dot{width:10px;height:10px;border-radius:50%}
+    .green{background:var(--green)} .amber{background:var(--amber)} .red{background:var(--red)}
+
+    .layout{
+      display:grid;
+      grid-template-columns:1.08fr .92fr;
+      gap:18px;
+    }
+    .stack{display:grid;gap:18px}
+    .section{padding:22px}
+    .head{
+      display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px
+    }
+    .head h2{margin:0;font-size:20px;letter-spacing:-.02em}
+    .pill{
+      background:#eef4ff;border:1px solid #dce8ff;color:#2855b8;
+      padding:8px 12px;border-radius:999px;font-size:12px;font-weight:700;
+    }
+
+    .ai-layout{
+      display:grid;
+      grid-template-columns:1fr .95fr;
+      gap:16px;
+    }
+    .spotlight{
+      padding:18px;
+      border-radius:22px;
+      background:linear-gradient(180deg,#f9fbff 0%, #eef5ff 100%);
+      border:1px solid #d9e7ff;
+    }
+    .story{display:grid;gap:10px}
+    .story-card{
+      background:#fff;
+      border:1px solid #e6eef8;
+      border-radius:16px;
+      padding:13px 14px;
+    }
+    .story-card .mini{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:6px}
+    .story-card .txt{font-size:14px;line-height:1.45}
+    .priority-list{display:grid;gap:10px}
+    .prio{
+      display:flex;justify-content:space-between;align-items:center;gap:12px;
+      background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px 14px;
+    }
+    .prio b{display:block;font-size:14px}
+    .prio span{display:block;font-size:12px;color:var(--muted);margin-top:4px}
+    .chipbtn{
+      border:none;background:#edf3ff;color:#244b9a;font-weight:700;border-radius:12px;padding:9px 12px;cursor:pointer
+    }
+
+    .two{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:18px;
+    }
+    .chart-box{padding:20px}
+    svg{width:100%;height:auto;display:block}
+    .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px}
+    .legend span{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:7px}
+    .sw{width:10px;height:10px;border-radius:50%;display:inline-block}
+
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:11px 10px;border-bottom:1px solid var(--line);text-align:left;font-size:13px}
+    th{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+    .badge{display:inline-block;padding:6px 10px;border-radius:999px;font-weight:800;font-size:11px;letter-spacing:.04em}
+    .b-red{background:#fee2e2;color:#991b1b}
+    .b-amber{background:#fef3c7;color:#92400e}
+    .b-green{background:#dcfce7;color:#166534}
+    .b-blue{background:#dbeafe;color:#1d4ed8}
+
+    .matrix{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:12px;
+    }
+    .metric{
+      padding:16px;
+      border-radius:18px;
+      background:linear-gradient(180deg,#fff 0%, #f9fbfe 100%);
+      border:1px solid var(--line);
+    }
+    .metric .ey{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+    .metric .num{font-size:28px;font-weight:900;margin-top:10px}
+    .metric .desc{font-size:12px;color:var(--muted);margin-top:7px;line-height:1.35}
+
+    .timeline{display:grid;gap:12px}
+    .event{
+      display:grid;
+      grid-template-columns:84px 16px 1fr;
+      gap:12px;
+      align-items:start;
+    }
+    .event .date{font-size:12px;color:var(--muted);padding-top:2px}
+    .line{position:relative;height:100%}
+    .line:before{
+      content:"";position:absolute;left:7px;top:0;bottom:-14px;width:2px;background:#d9e2ee
+    }
+    .node{
+      width:16px;height:16px;border-radius:50%;border:4px solid var(--brand);background:#fff;position:relative;z-index:1
+    }
+    .event-card{
+      background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px 14px
+    }
+    .event-card b{display:block;font-size:14px}
+    .event-card span{display:block;font-size:12px;color:var(--muted);margin-top:4px}
+    .event-card p{margin:8px 0 0;font-size:13px;line-height:1.45;color:var(--text)}
+
+    .quick{
+      display:grid;
+      grid-template-columns:repeat(5,1fr);
+      gap:12px;
+    }
+    .tile{
+      padding:16px;
+      border-radius:18px;
+      background:linear-gradient(180deg,#fff 0%, #f9fbfe 100%);
+      border:1px solid var(--line);
+      text-align:center;
+    }
+    .icon{
+      width:50px;height:50px;border-radius:16px;margin:0 auto 10px;
+      display:grid;place-items:center;font-size:22px;
+      background:linear-gradient(135deg,#edf3ff,#f1edff);
+      border:1px solid #e3eafb;
+    }
+    .tile b{display:block;font-size:14px}
+    .tile span{display:block;font-size:12px;color:var(--muted);margin-top:6px;line-height:1.35}
+    .foot{font-size:12px;color:var(--muted);margin-top:12px}
+    @media (max-width:1300px){
+      .top,.layout{grid-template-columns:1fr}
+      .kpis{grid-template-columns:repeat(3,1fr)}
+      .ai-layout,.two,.quick,.matrix{grid-template-columns:1fr 1fr}
+    }
+    @media (max-width:860px){
+      .kpis,.ai-layout,.two,.quick,.matrix{grid-template-columns:1fr}
+      .event{grid-template-columns:66px 16px 1fr}
+      .hero h1{font-size:28px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="top">
+      <div class="card hero">
+        <h1>Sales Agent Command Center</h1>
+        <p>A premium rep-level cockpit for Metagenics field sellers. Designed for daily decision-making across territory health, account risk, pipeline momentum, follow-up discipline, and whitespace growth.</p>
+        <div class="meta">
+          <div class="tag">Rep: Sarah Mitchell</div>
+          <div class="tag">Region: South Central</div>
+          <div class="tag">Territory: Austin / San Antonio</div>
+          <div class="tag">84 Active Accounts</div>
+          <div class="tag">Q2 FY26</div>
+        </div>
+        <div class="hero-actions">
+          <button class="btn primary">Generate Weekly Brief</button>
+          <button class="btn secondary">Plan Territory Route</button>
+          <button class="btn secondary">Launch Recovery Actions</button>
+        </div>
+      </div>
+      <div class="card score">
+        <div>
+          <div class="eyebrow">Territory Performance Index</div>
+          <div class="big">78</div>
+          <div class="caption">Strong revenue pace with moderate portfolio risk. Biggest upside sits in mid-tier account expansion and education-led bundle adoption.</div>
+        </div>
+        <div class="ring"><span>78</span></div>
+      </div>
+    </section>
+
+    <section class="kpis">
+      <div class="card kpi">
+        <div class="label">Book of Business</div>
+        <div class="value">$2.84M</div>
+        <div class="note">YTD revenue across assigned accounts</div>
+      </div>
+      <div class="card kpi">
+        <div class="label">Quota Pace</div>
+        <div class="value"><span class="signal"><i class="dot green"></i>104%</span></div>
+        <div class="note">Ahead of quarterly run rate</div>
+      </div>
+      <div class="card kpi">
+        <div class="label">Weighted Pipeline</div>
+        <div class="value">$311K</div>
+        <div class="note">Open pipeline totals $428K</div>
+      </div>
+      <div class="card kpi">
+        <div class="label">At-Risk Accounts</div>
+        <div class="value"><span class="signal"><i class="dot red"></i>12</span></div>
+        <div class="note">Delayed order cadence beyond norm</div>
+      </div>
+      <div class="card kpi">
+        <div class="label">Follow-Ups Due</div>
+        <div class="value"><span class="signal"><i class="dot amber"></i>18</span></div>
+        <div class="note">7 high-priority within 48 hours</div>
+      </div>
+      <div class="card kpi">
+        <div class="label">Training Openings</div>
+        <div class="value">9</div>
+        <div class="note">Education-led reactivation targets</div>
+      </div>
+    </section>
+
+    <section class="layout">
+      <div class="stack">
+        <div class="card section">
+          <div class="head">
+            <h2>AI Territory Narrative</h2>
+            <span class="pill">Refreshed 11 minutes ago</span>
+          </div>
+          <div class="ai-layout">
+            <div class="spotlight">
+              <div class="story">
+                <div class="story-card">
+                  <div class="mini">Performance</div>
+                  <div class="txt">Revenue performance is healthy, but growth is concentrated in the top tier. The next lift will come from converting <b>watchlist and whitespace accounts</b>.</div>
+                </div>
+                <div class="story-card">
+                  <div class="mini">Risk</div>
+                  <div class="txt"><b>12 accounts</b> are drifting due to delayed reorder behavior. Four of those accounts account for more than <b>$86K</b> of annualized revenue.</div>
+                </div>
+                <div class="story-card">
+                  <div class="mini">Growth</div>
+                  <div class="txt">The strongest product whitespace sits in <b>Vitamin D</b> and <b>Immune Support bundles</b>, especially across functional medicine clinics.</div>
+                </div>
+                <div class="story-card">
+                  <div class="mini">Coaching</div>
+                  <div class="txt">Accounts that receive an in-person visit plus follow-on training show the strongest expansion rates. Prioritize education-led selling motions.</div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="head" style="margin-bottom:12px">
+                <h2 style="font-size:17px">Priority Moves</h2>
+                <span class="pill">Action stack</span>
+              </div>
+              <div class="priority-list">
+                <div class="prio">
+                  <div><b>Recover top 5 at-risk accounts</b><span>Potential revenue protected: $54K</span></div>
+                  <button class="chipbtn">Open</button>
+                </div>
+                <div class="prio">
+                  <div><b>Launch Vitamin D push to 8 clinics</b><span>Upside estimate: $37K</span></div>
+                  <button class="chipbtn">Open</button>
+                </div>
+                <div class="prio">
+                  <div><b>Advance 3 close-stage deals this week</b><span>Weighted value: $61K</span></div>
+                  <button class="chipbtn">Open</button>
+                </div>
+                <div class="prio">
+                  <div><b>Book 4 education visits before Friday</b><span>Training-led conversion strategy</span></div>
+                  <button class="chipbtn">Open</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="two">
+          <div class="card chart-box">
+            <div class="head">
+              <h2>Revenue Velocity</h2>
+              <span class="pill">12 months</span>
+            </div>
+            <svg viewBox="0 0 520 260">
+              <defs>
+                <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#2b6ff7" stop-opacity=".25"/>
+                  <stop offset="100%" stop-color="#2b6ff7" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <g>
+                <line x1="40" y1="220" x2="500" y2="220" stroke="#d9e2ee"/>
+                <line x1="40" y1="170" x2="500" y2="170" stroke="#eef3f8"/>
+                <line x1="40" y1="120" x2="500" y2="120" stroke="#eef3f8"/>
+                <line x1="40" y1="70" x2="500" y2="70" stroke="#eef3f8"/>
+              </g>
+              <path d="M40,194 L82,184 L124,168 L166,158 L208,148 L250,138 L292,126 L334,118 L376,110 L418,92 L460,82 L500,70 L500,220 L40,220 Z" fill="url(#revGrad)"/>
+              <path d="M40,194 L82,184 L124,168 L166,158 L208,148 L250,138 L292,126 L334,118 L376,110 L418,92 L460,82 L500,70" fill="none" stroke="#2b6ff7" stroke-width="4" stroke-linecap="round"/>
+              <g fill="#2b6ff7">
+                <circle cx="40" cy="194" r="4"/><circle cx="82" cy="184" r="4"/><circle cx="124" cy="168" r="4"/><circle cx="166" cy="158" r="4"/>
+                <circle cx="208" cy="148" r="4"/><circle cx="250" cy="138" r="4"/><circle cx="292" cy="126" r="4"/><circle cx="334" cy="118" r="4"/>
+                <circle cx="376" cy="110" r="4"/><circle cx="418" cy="92" r="4"/><circle cx="460" cy="82" r="4"/><circle cx="500" cy="70" r="4"/>
+              </g>
+              <g fill="#7a8596" font-size="11">
+                <text x="35" y="238">Jan</text><text x="77" y="238">Feb</text><text x="119" y="238">Mar</text><text x="161" y="238">Apr</text>
+                <text x="203" y="238">May</text><text x="245" y="238">Jun</text><text x="287" y="238">Jul</text><text x="329" y="238">Aug</text>
+                <text x="371" y="238">Sep</text><text x="413" y="238">Oct</text><text x="455" y="238">Nov</text><text x="495" y="238">Dec</text>
+              </g>
+            </svg>
+            <div class="legend">
+              <span><i class="sw" style="background:#2b6ff7"></i>Revenue velocity</span>
+              <span>Growth vs prior year: <b style="color:#16a34a">+14.2%</b></span>
+            </div>
+          </div>
+
+          <div class="card chart-box">
+            <div class="head">
+              <h2>Pipeline Composition</h2>
+              <span class="pill">Current quarter</span>
+            </div>
+            <svg viewBox="0 0 520 260">
+              <g fill="#eef3f8">
+                <rect x="126" y="35" width="320" height="24" rx="12"/>
+                <rect x="126" y="82" width="320" height="24" rx="12"/>
+                <rect x="126" y="129" width="320" height="24" rx="12"/>
+                <rect x="126" y="176" width="320" height="24" rx="12"/>
+              </g>
+              <rect x="126" y="35" width="250" height="24" rx="12" fill="#2b6ff7"/>
+              <rect x="126" y="82" width="206" height="24" rx="12" fill="#7a5cff"/>
+              <rect x="126" y="129" width="168" height="24" rx="12" fill="#0ea5a8"/>
+              <rect x="126" y="176" width="122" height="24" rx="12" fill="#f59e0b"/>
+              <g fill="#334155" font-size="13" font-weight="600">
+                <text x="18" y="52">Prep Call</text>
+                <text x="18" y="99">Engage</text>
+                <text x="18" y="146">Close</text>
+                <text x="18" y="193">Won</text>
+              </g>
+              <g fill="#64748b" font-size="12">
+                <text x="388" y="52">$122K</text>
+                <text x="344" y="99">$101K</text>
+                <text x="305" y="146">$84K</text>
+                <text x="260" y="193">$63K</text>
+              </g>
+            </svg>
+            <div class="legend">
+              <span><i class="sw" style="background:#2b6ff7"></i>Prep</span>
+              <span><i class="sw" style="background:#7a5cff"></i>Engage</span>
+              <span><i class="sw" style="background:#0ea5a8"></i>Close</span>
+              <span><i class="sw" style="background:#f59e0b"></i>Won</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card section">
+          <div class="head">
+            <h2>Account Portfolio Priorities</h2>
+            <span class="pill">Impact-ranked accounts</span>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Account</th>
+                <th>Status</th>
+                <th>Last Order</th>
+                <th>YTD Revenue</th>
+                <th>Whitespace</th>
+                <th>Next Move</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Austin Functional Wellness</td>
+                <td><span class="badge b-amber">Watch</span></td>
+                <td>38 days</td>
+                <td>$184K</td>
+                <td>Immune Support</td>
+                <td>Schedule visit</td>
+              </tr>
+              <tr>
+                <td>Hill Country Integrative</td>
+                <td><span class="badge b-red">At Risk</span></td>
+                <td>46 days</td>
+                <td>$121K</td>
+                <td>Reactivation + Training</td>
+                <td>Call today</td>
+              </tr>
+              <tr>
+                <td>Lonestar Wellness Center</td>
+                <td><span class="badge b-green">Healthy</span></td>
+                <td>12 days</td>
+                <td>$209K</td>
+                <td>Vitamin D</td>
+                <td>Bundle proposal</td>
+              </tr>
+              <tr>
+                <td>San Antonio Vitality Clinic</td>
+                <td><span class="badge b-blue">Strategic</span></td>
+                <td>19 days</td>
+                <td>$262K</td>
+                <td>Protocol program</td>
+                <td>Close deal</td>
+              </tr>
+              <tr>
+                <td>Riverbend Functional Care</td>
+                <td><span class="badge b-amber">Watch</span></td>
+                <td>31 days</td>
+                <td>$97K</td>
+                <td>Omega-3 upsell</td>
+                <td>Follow-up email</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card section">
+          <div class="head">
+            <h2>Action Launcher</h2>
+            <span class="pill">Daily workflow</span>
+          </div>
+          <div class="quick">
+            <div class="tile"><div class="icon">🧠</div><b>Weekly Brief</b><span>Summarize rep portfolio and risks</span></div>
+            <div class="tile"><div class="icon">☎️</div><b>Recovery Calls</b><span>Open at-risk account list</span></div>
+            <div class="tile"><div class="icon">📍</div><b>Route Planner</b><span>Optimize field visits this week</span></div>
+            <div class="tile"><div class="icon">📈</div><b>Close Pipeline</b><span>Focus close-stage opportunities</span></div>
+            <div class="tile"><div class="icon">🎓</div><b>Training Motion</b><span>Create education-led outreach</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stack">
+        <div class="card section">
+          <div class="head">
+            <h2>Portfolio Signal Matrix</h2>
+            <span class="pill">Operational view</span>
+          </div>
+          <div class="matrix">
+            <div class="metric">
+              <div class="ey">Strategic Accounts</div>
+              <div class="num">14</div>
+              <div class="desc">Largest revenue anchors in territory</div>
+            </div>
+            <div class="metric">
+              <div class="ey">Healthy Accounts</div>
+              <div class="num">51</div>
+              <div class="desc">Stable cadence and engagement</div>
+            </div>
+            <div class="metric">
+              <div class="ey">Watchlist</div>
+              <div class="num">21</div>
+              <div class="desc">Need attention before drift worsens</div>
+            </div>
+            <div class="metric">
+              <div class="ey">Growth Targets</div>
+              <div class="num">17</div>
+              <div class="desc">High whitespace expansion upside</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card section">
+          <div class="head">
+            <h2>Product Opportunity Mix</h2>
+            <span class="pill">Territory whitespace</span>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Category</th>
+                <th>Penetration</th>
+                <th>Trend</th>
+                <th>Upside</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Probiotics</td>
+                <td>78%</td>
+                <td>↓ 6%</td>
+                <td>Retention priority</td>
+              </tr>
+              <tr>
+                <td>Omega-3</td>
+                <td>61%</td>
+                <td>↑ 9%</td>
+                <td>Bundle opportunity</td>
+              </tr>
+              <tr>
+                <td>Vitamin D</td>
+                <td>34%</td>
+                <td>→ Flat</td>
+                <td>Expansion target</td>
+              </tr>
+              <tr>
+                <td>Immune Support</td>
+                <td>19%</td>
+                <td>↑ 3%</td>
+                <td>Highest whitespace</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card section">
+          <div class="head">
+            <h2>Rep Operations Snapshot</h2>
+            <span class="pill">Execution KPIs</span>
+          </div>
+          <div class="matrix">
+            <div class="metric">
+              <div class="ey">Visits This Month</div>
+              <div class="num">21</div>
+              <div class="desc">Target pace: 18</div>
+            </div>
+            <div class="metric">
+              <div class="ey">Calls Completed</div>
+              <div class="num">46</div>
+              <div class="desc">14 created follow-ups</div>
+            </div>
+            <div class="metric">
+              <div class="ey">Trainings Delivered</div>
+              <div class="num">7</div>
+              <div class="desc">Education-led growth motion</div>
+            </div>
+            <div class="metric">
+              <div class="ey">Win Rate</div>
+              <div class="num">34%</div>
+              <div class="desc">Close-stage conversion</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card section">
+          <div class="head">
+            <h2>Recent Territory Activity</h2>
+            <span class="pill">Execution timeline</span>
+          </div>
+          <div class="timeline">
+            <div class="event">
+              <div class="date">Apr 05</div>
+              <div class="line"><div class="node"></div></div>
+              <div class="event-card">
+                <b>Closed opportunity at San Antonio Vitality Clinic</b>
+                <span>Value: $17K • Stage moved to Won</span>
+                <p>Quarterly protocol program approved after follow-up visit and training review.</p>
+              </div>
+            </div>
+            <div class="event">
+              <div class="date">Apr 04</div>
+              <div class="line"><div class="node" style="border-color:#7a5cff"></div></div>
+              <div class="event-card">
+                <b>Completed 3 in-person visits</b>
+                <span>Accounts covered: 3</span>
+                <p>Two accounts were flagged for probiotic reorder risk. One became a Vitamin D growth target.</p>
+              </div>
+            </div>
+            <div class="event">
+              <div class="date">Apr 03</div>
+              <div class="line"><div class="node" style="border-color:#0ea5a8"></div></div>
+              <div class="event-card">
+                <b>Hosted virtual training session</b>
+                <span>Attendees: 11 clinic staff</span>
+                <p>Immune Support education completed. Follow-up bundle opportunities created from the session.</p>
+              </div>
+            </div>
+            <div class="event">
+              <div class="date">Apr 02</div>
+              <div class="line"><div class="node" style="border-color:#f59e0b"></div></div>
+              <div class="event-card">
+                <b>Reviewed AI weekly territory brief</b>
+                <span>Action plan reprioritized</span>
+                <p>Rep shifted the week toward at-risk recovery and close-stage opportunity acceleration.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card section">
+          <div class="head">
+            <h2>Risk & Focus Queue</h2>
+            <span class="pill">Immediate attention</span>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Count</th>
+                <th>Impact</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Accounts past expected reorder cadence</td>
+                <td>12</td>
+                <td><span class="badge b-red">High</span></td>
+              </tr>
+              <tr>
+                <td>Close-stage opportunities idle &gt; 7 days</td>
+                <td>3</td>
+                <td><span class="badge b-amber">Medium</span></td>
+              </tr>
+              <tr>
+                <td>Accounts needing training engagement</td>
+                <td>9</td>
+                <td><span class="badge b-amber">Medium</span></td>
+              </tr>
+              <tr>
+                <td>High-value accounts with no visit this month</td>
+                <td>5</td>
+                <td><span class="badge b-red">High</span></td>
+              </tr>
+              <tr>
+                <td>Unworked AI product recommendations</td>
+                <td>8</td>
+                <td><span class="badge b-blue">Opportunity</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <div class="foot">Alternative premium design using the original blue, white, violet, teal, green, amber, and red palette so it stays visually aligned with your account dashboard.</div>
+  </div>
+</body>
+</html>
