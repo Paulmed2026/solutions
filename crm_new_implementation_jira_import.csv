@@ -1,0 +1,266 @@
+Issue Id,Parent Id,Issue Type,Summary,Description,Epic Link,Labels,Priority
+S01,,Story,Project governance and scope baseline,"As a project sponsor, I want scope, governance, success criteria, and delivery cadence defined so the implementation is controlled from day one.",REPLACE_WITH_EPIC_KEY,"Discovery,Governance,Phase1",High
+S01-T1,S01,Sub-task,Run project kickoff with business and IT stakeholders,,,"Discovery,Governance,Phase1",Medium
+S01-T2,S01,Sub-task,Define in-scope and out-of-scope modules for phase 1,,,"Discovery,Governance,Phase1",Medium
+S01-T3,S01,Sub-task,"Define project objectives, KPIs, and success measures",,,"Discovery,Governance,Phase1",Medium
+S01-T4,S01,Sub-task,Build stakeholder register and RACI,,,"Discovery,Governance,Phase1",Medium
+S01-T5,S01,Sub-task,"Define sprint cadence, status reporting, and governance meetings",,,"Discovery,Governance,Phase1",Medium
+S01-T6,S01,Sub-task,Create RAID log and change control process,,,"Discovery,Governance,Phase1",Medium
+S02,,Story,Current-state CRM and process assessment,"As a solution team, we need to understand the current CRM, sales process, and pain points so the new system solves the right problems.",REPLACE_WITH_EPIC_KEY,"Discovery,Assessment,Phase1",High
+S02-T1,S02,Sub-task,"Inventory current tables, forms, views, dashboards, flows, plugins, and JavaScript",,,"Discovery,Assessment,Phase1",Medium
+S02-T2,S02,Sub-task,Document current inside sales and outside sales processes,,,"Discovery,Assessment,Phase1",Medium
+S02-T3,S02,Sub-task,"Document current lead, opportunity, case, and contact management process",,,"Discovery,Assessment,Phase1",Medium
+S02-T4,S02,Sub-task,Capture current reporting and manual workarounds,,,"Discovery,Assessment,Phase1",Medium
+S02-T5,S02,Sub-task,Identify duplicate data pain points and usability issues,,,"Discovery,Assessment,Phase1",Medium
+S02-T6,S02,Sub-task,Document legacy customizations that should not be carried forward,,,"Discovery,Assessment,Phase1",Medium
+S03,,Story,Data source and integration assessment,"As an integration architect, I want all current source systems and interfaces documented so the new CRM integration model is complete.",REPLACE_WITH_EPIC_KEY,"Discovery,Integration-DW,Phase1",High
+S03-T1,S03,Sub-task,Identify all source systems feeding the current CRM,,,"Discovery,Integration-DW,Phase1",Medium
+S03-T2,S03,Sub-task,Document current Boomi integrations and data flows,,,"Discovery,Integration-DW,Phase1",Medium
+S03-T3,S03,Sub-task,Inventory Data Warehouse source objects and refresh frequency,,,"Discovery,Integration-DW,Phase1",Medium
+S03-T4,S03,Sub-task,Inventory Dotdigital touchpoints and synchronized data,,,"Discovery,Integration-DW,Phase1",Medium
+S03-T5,S03,Sub-task,Inventory Finance and Operations invoice data needed in CRM,,,"Discovery,Integration-DW,Phase1",Medium
+S03-T6,S03,Sub-task,"Document inbound, outbound, and reporting dependencies",,,"Discovery,Integration-DW,Phase1",Medium
+S04,,Story,Reporting and KPI requirement discovery,"As a sales leader, I want reporting requirements documented so dashboards and analytics are built correctly in the new CRM.",REPLACE_WITH_EPIC_KEY,"Discovery,Reporting,Phase1",High
+S04-T1,S04,Sub-task,"Identify KPIs for reps, territory managers, directors, and executives",,,"Discovery,Reporting,Phase1",Medium
+S04-T2,S04,Sub-task,Define required sales dashboards and operational reports,,,"Discovery,Reporting,Phase1",Medium
+S04-T3,S04,Sub-task,"Identify territory, pipeline, product, and case reporting needs",,,"Discovery,Reporting,Phase1",Medium
+S04-T4,S04,Sub-task,Capture invoice visibility and customer financial summary needs,,,"Discovery,Reporting,Phase1",Medium
+S04-T5,S04,Sub-task,Capture campaign and engagement reporting from Dotdigital,,,"Discovery,Reporting,Phase1",Medium
+S04-T6,S04,Sub-task,Identify reports that can be retired,,,"Discovery,Reporting,Phase1",Medium
+S05,,Story,Migration scope and archival strategy,"As a business owner, I want migration scope defined so only the right data moves into the new CRM.",REPLACE_WITH_EPIC_KEY,"Migration,Discovery,Phase1",High
+S05-T1,S05,Sub-task,Define which records are active and must migrate,,,"Migration,Discovery,Phase1",Medium
+S05-T2,S05,Sub-task,Define optional historical data to migrate,,,"Migration,Discovery,Phase1",Medium
+S05-T3,S05,Sub-task,Define archive-only data,,,"Migration,Discovery,Phase1",Medium
+S05-T4,S05,Sub-task,Define document and attachment migration scope,,,"Migration,Discovery,Phase1",Medium
+S05-T5,S05,Sub-task,Define data retention and legal or compliance constraints,,,"Migration,Discovery,Phase1",Medium
+S05-T6,S05,Sub-task,Produce migration scope sign-off,,,"Migration,Discovery,Phase1",Medium
+S06,,Story,Target solution architecture,"As a solution architect, I want a target-state architecture defined so CRM, integrations, and reporting align to one design.",REPLACE_WITH_EPIC_KEY,"Architecture,Phase2",High
+S06-T1,S06,Sub-task,Design overall application architecture,,,"Architecture,Phase2",Medium
+S06-T2,S06,Sub-task,Define source-of-truth by domain,,,"Architecture,Phase2",Medium
+S06-T3,S06,Sub-task,Define Dataverse versus external system ownership,,,"Architecture,Phase2",Medium
+S06-T4,S06,Sub-task,"Define integration patterns for Data Warehouse, Dotdigital, and Finance and Operations",,,"Architecture,Phase2",Medium
+S06-T5,S06,Sub-task,"Define non-functional requirements for performance, auditability, and supportability",,,"Architecture,Phase2",Medium
+S06-T6,S06,Sub-task,Produce architecture diagram and review with stakeholders,,,"Architecture,Phase2",Medium
+S07,,Story,Target data model design,"As a CRM architect, I want the target data model designed so the new system supports the business cleanly without legacy baggage.",REPLACE_WITH_EPIC_KEY,"DataModel,Architecture,Phase2",High
+S07-T1,S07,Sub-task,Design Account model,,,"DataModel,Architecture,Phase2",Medium
+S07-T2,S07,Sub-task,Design Contact model,,,"DataModel,Architecture,Phase2",Medium
+S07-T3,S07,Sub-task,Design Customer Location and Site model,,,"DataModel,Architecture,Phase2",Medium
+S07-T4,S07,Sub-task,Design Territory and Territory Location model,,,"DataModel,Architecture,Phase2",Medium
+S07-T5,S07,Sub-task,Design Coverage Assignment and ownership model,,,"DataModel,Architecture,Phase2",Medium
+S07-T6,S07,Sub-task,"Design Product, Lead, Opportunity, Case, and Invoice Summary structures",,,"DataModel,Architecture,Phase2",Medium
+S07-T7,S07,Sub-task,"Define relationships, external IDs, required fields, and naming standards",,,"DataModel,Architecture,Phase2",Medium
+S08,,Story,Territory and ownership model design,"As a sales operations lead, I want territory and ownership rules defined so client coverage works across Australia and New Zealand.",REPLACE_WITH_EPIC_KEY,"Territory,Architecture,Phase2",High
+S08-T1,S08,Sub-task,"Define country, region, and territory hierarchy",,,"Territory,Architecture,Phase2",Medium
+S08-T2,S08,Sub-task,Define inside sales versus outside sales coverage rules,,,"Territory,Architecture,Phase2",Medium
+S08-T3,S08,Sub-task,Define named-account override rules,,,"Territory,Architecture,Phase2",Medium
+S08-T4,S08,Sub-task,Define location-level versus parent-account ownership rules,,,"Territory,Architecture,Phase2",Medium
+S08-T5,S08,Sub-task,Define reassignment rules and escalation paths,,,"Territory,Architecture,Phase2",Medium
+S08-T6,S08,Sub-task,Define territory manager and director rollups,,,"Territory,Architecture,Phase2",Medium
+S09,,Story,Security and access model design,"As a system administrator, I want a security model defined so users only see and edit what they should.",REPLACE_WITH_EPIC_KEY,"Security,Architecture,Phase2",High
+S09-T1,S09,Sub-task,"Define business units, teams, and role approach",,,"Security,Architecture,Phase2",Medium
+S09-T2,S09,Sub-task,"Define security roles for reps, managers, directors, admins, marketing, and finance read-only users",,,"Security,Architecture,Phase2",Medium
+S09-T3,S09,Sub-task,Define hierarchy security needs,,,"Security,Architecture,Phase2",Medium
+S09-T4,S09,Sub-task,Define field-level security needs,,,"Security,Architecture,Phase2",Medium
+S09-T5,S09,Sub-task,Define sharing rules for overlay and dual-coverage scenarios,,,"Security,Architecture,Phase2",Medium
+S09-T6,S09,Sub-task,Define environment and admin access model,,,"Security,Architecture,Phase2",Medium
+S10,,Story,"UX, app navigation, and UI design","As a sales user, I want a clean and role-based CRM experience so I can work faster with less friction.",REPLACE_WITH_EPIC_KEY,"UIUX,Architecture,Phase2",High
+S10-T1,S10,Sub-task,Define persona-based app experiences,,,"UIUX,Architecture,Phase2",Medium
+S10-T2,S10,Sub-task,"Design sitemap and navigation for inside sales, outside sales, and leadership",,,"UIUX,Architecture,Phase2",Medium
+S10-T3,S10,Sub-task,"Create wireframes for Account 360, Lead workspace, Opportunity workspace, and dashboards",,,"UIUX,Architecture,Phase2",Medium
+S10-T4,S10,Sub-task,"Identify pages needing custom UI using HTML, CSS, JavaScript, or custom pages",,,"UIUX,Architecture,Phase2",Medium
+S10-T5,S10,Sub-task,Define form simplification and section layout standards,,,"UIUX,Architecture,Phase2",Medium
+S10-T6,S10,Sub-task,Review UX designs with business users,,,"UIUX,Architecture,Phase2",Medium
+S11,,Story,Integration architecture design,"As an integration architect, I want the direct Data Warehouse integration model defined so the new CRM no longer depends on Boomi.",REPLACE_WITH_EPIC_KEY,"Integration-DW,Architecture,Phase2",High
+S11-T1,S11,Sub-task,Define integration flow from Data Warehouse to Dataverse,,,"Integration-DW,Architecture,Phase2",Medium
+S11-T2,S11,Sub-task,"Define staging, validation, and upsert strategy",,,"Integration-DW,Architecture,Phase2",Medium
+S11-T3,S11,Sub-task,Define alternate keys and external IDs,,,"Integration-DW,Architecture,Phase2",Medium
+S11-T4,S11,Sub-task,Define sync schedules and retry behavior,,,"Integration-DW,Architecture,Phase2",Medium
+S11-T5,S11,Sub-task,Define reconciliation and exception handling,,,"Integration-DW,Architecture,Phase2",Medium
+S11-T6,S11,Sub-task,Define Boomi decommission plan,,,"Integration-DW,Architecture,Phase2",Medium
+S12,,Story,"Data quality, deduplication, and migration design","As a data lead, I want data cleansing and migration rules defined so the new CRM starts with trusted data.",REPLACE_WITH_EPIC_KEY,"Migration,DataQuality,Phase2",High
+S12-T1,S12,Sub-task,Define deduplication rules by object,,,"Migration,DataQuality,Phase2",Medium
+S12-T2,S12,Sub-task,Define match keys and survivorship rules,,,"Migration,DataQuality,Phase2",Medium
+S12-T3,S12,Sub-task,"Define cleansing rules for addresses, emails, phone numbers, and territory mapping",,,"Migration,DataQuality,Phase2",Medium
+S12-T4,S12,Sub-task,Define data transformation rules from source to target,,,"Migration,DataQuality,Phase2",Medium
+S12-T5,S12,Sub-task,Define trial migration cycles and reconciliation checkpoints,,,"Migration,DataQuality,Phase2",Medium
+S12-T6,S12,Sub-task,Produce migration mapping workbook,,,"Migration,DataQuality,Phase2",Medium
+S13,,Story,"Environments, solution structure, and ALM setup","As a platform team, we want environments and solution structure set up so development and deployment are controlled.",REPLACE_WITH_EPIC_KEY,"ALM,Platform,Phase3",High
+S13-T1,S13,Sub-task,"Provision DEV, TEST, UAT, and PROD environments",,,"ALM,Platform,Phase3",Medium
+S13-T2,S13,Sub-task,Create base managed and unmanaged solution structure,,,"ALM,Platform,Phase3",Medium
+S13-T3,S13,Sub-task,"Configure publishers, prefixes, and environment variables",,,"ALM,Platform,Phase3",Medium
+S13-T4,S13,Sub-task,Configure service accounts and connection references,,,"ALM,Platform,Phase3",Medium
+S13-T5,S13,Sub-task,Define branching and deployment process,,,"ALM,Platform,Phase3",Medium
+S13-T6,S13,Sub-task,Set up deployment checklist and release documentation,,,"ALM,Platform,Phase3",Medium
+S14,,Story,Base platform and reference data configuration,"As a system admin, I want base configuration completed so feature build can start on a stable foundation.",REPLACE_WITH_EPIC_KEY,"Platform,Phase3",Medium
+S14-T1,S14,Sub-task,"Configure currencies, business settings, fiscal periods, and regional settings",,,"Platform,Phase3",Medium
+S14-T2,S14,Sub-task,Load choice values and reference data,,,"Platform,Phase3",Medium
+S14-T3,S14,Sub-task,"Configure email, auditing, duplicate detection, and search settings",,,"Platform,Phase3",Medium
+S14-T4,S14,Sub-task,Configure app modules and base navigation shells,,,"Platform,Phase3",Medium
+S14-T5,S14,Sub-task,"Configure users, teams, and test accounts",,,"Platform,Phase3",Medium
+S14-T6,S14,Sub-task,Validate baseline environment readiness,,,"Platform,Phase3",Medium
+S15,,Story,"Customer master: Accounts, Contacts, and Locations","As a sales rep, I want a complete customer master model so I can manage organizations, people, and sites accurately.",REPLACE_WITH_EPIC_KEY,"CoreCRM,DataModel,Phase4",High
+S15-T1,S15,Sub-task,Build Account table fields and relationships,,,"CoreCRM,DataModel,Phase4",Medium
+S15-T2,S15,Sub-task,Build Contact table extensions and relationships,,,"CoreCRM,DataModel,Phase4",Medium
+S15-T3,S15,Sub-task,Build Customer Location and Site table,,,"CoreCRM,DataModel,Phase4",Medium
+S15-T4,S15,Sub-task,"Configure forms, views, quick views, and subgrids",,,"CoreCRM,DataModel,Phase4",Medium
+S15-T5,S15,Sub-task,Add validation and business rules,,,"CoreCRM,DataModel,Phase4",Medium
+S15-T6,S15,Sub-task,Build parent-child and location relationships,,,"CoreCRM,DataModel,Phase4",Medium
+S15-T7,S15,Sub-task,"Unit test create, edit, and search scenarios",,,"CoreCRM,DataModel,Phase4",Medium
+S16,,Story,Lead management,"As an inside sales rep, I want lead capture, qualification, routing, and conversion processes so leads move efficiently through the funnel.",REPLACE_WITH_EPIC_KEY,"CoreCRM,Lead,Phase4",High
+S16-T1,S16,Sub-task,Configure Lead fields and forms,,,"CoreCRM,Lead,Phase4",Medium
+S16-T2,S16,Sub-task,Define lead source and scoring fields,,,"CoreCRM,Lead,Phase4",Medium
+S16-T3,S16,Sub-task,Build qualification statuses and required stage rules,,,"CoreCRM,Lead,Phase4",Medium
+S16-T4,S16,Sub-task,"Configure lead-to-account, contact, and opportunity conversion behavior",,,"CoreCRM,Lead,Phase4",Medium
+S16-T5,S16,Sub-task,Build lead routing logic,,,"CoreCRM,Lead,Phase4",Medium
+S16-T6,S16,Sub-task,Create lead views and work queues,,,"CoreCRM,Lead,Phase4",Medium
+S16-T7,S16,Sub-task,Test qualification and conversion scenarios,,,"CoreCRM,Lead,Phase4",Medium
+S17,,Story,Opportunity management,"As a sales rep, I want an opportunity process aligned to Metagenics’ sales cycle so I can manage pipeline accurately.",REPLACE_WITH_EPIC_KEY,"CoreCRM,Opportunity,Phase4",High
+S17-T1,S17,Sub-task,Configure Opportunity stages and business process flow,,,"CoreCRM,Opportunity,Phase4",Medium
+S17-T2,S17,Sub-task,Add required fields by stage,,,"CoreCRM,Opportunity,Phase4",Medium
+S17-T3,S17,Sub-task,"Configure revenue, estimated close date, and forecasting fields",,,"CoreCRM,Opportunity,Phase4",Medium
+S17-T4,S17,Sub-task,Build opportunity ownership and collaborator model,,,"CoreCRM,Opportunity,Phase4",Medium
+S17-T5,S17,Sub-task,Configure close-as-won and close-as-lost reasons,,,"CoreCRM,Opportunity,Phase4",Medium
+S17-T6,S17,Sub-task,"Build opportunity views, dashboards, and notifications",,,"CoreCRM,Opportunity,Phase4",Medium
+S17-T7,S17,Sub-task,Test opportunity progression and close scenarios,,,"CoreCRM,Opportunity,Phase4",Medium
+S18,,Story,Product catalog and pricing,"As a sales user, I want products and pricing available in CRM so I can work opportunities with the correct commercial data.",REPLACE_WITH_EPIC_KEY,"CoreCRM,Product,Phase4",High
+S18-T1,S18,Sub-task,"Configure product families, products, units, and price lists",,,"CoreCRM,Product,Phase4",Medium
+S18-T2,S18,Sub-task,Define active and inactive product behavior,,,"CoreCRM,Product,Phase4",Medium
+S18-T3,S18,Sub-task,Map product categories and segmentation,,,"CoreCRM,Product,Phase4",Medium
+S18-T4,S18,Sub-task,Configure opportunity product behavior,,,"CoreCRM,Product,Phase4",Medium
+S18-T5,S18,Sub-task,Define pricing source and refresh approach from Data Warehouse or Finance and Operations if applicable,,,"CoreCRM,Product,Phase4",Medium
+S18-T6,S18,Sub-task,Create product views and admin maintenance screens,,,"CoreCRM,Product,Phase4",Medium
+S18-T7,S18,Sub-task,Test product selection scenarios,,,"CoreCRM,Product,Phase4",Medium
+S19,,Story,Case management foundation,"As a sales and service user, I want case visibility and management in CRM so customer issues are visible and actionable.",REPLACE_WITH_EPIC_KEY,"CoreCRM,Case,Phase4",Medium
+S19-T1,S19,Sub-task,Confirm case scope for phase 1,,,"CoreCRM,Case,Phase4",Medium
+S19-T2,S19,Sub-task,"Configure Case fields, forms, and views",,,"CoreCRM,Case,Phase4",Medium
+S19-T3,S19,Sub-task,Define case statuses and priorities,,,"CoreCRM,Case,Phase4",Medium
+S19-T4,S19,Sub-task,"Relate cases to accounts, contacts, and opportunities",,,"CoreCRM,Case,Phase4",Medium
+S19-T5,S19,Sub-task,Build case queues and views for business users,,,"CoreCRM,Case,Phase4",Medium
+S19-T6,S19,Sub-task,Add summary visibility on Account 360,,,"CoreCRM,Case,Phase4",Medium
+S19-T7,S19,Sub-task,"Test case create, update, and close flows",,,"CoreCRM,Case,Phase4",Medium
+S20,,Story,Territory assignment and routing automation,"As sales operations, I want customer and lead assignment automated so records go to the right territory and owner.",REPLACE_WITH_EPIC_KEY,"Territory,Automation,Phase4",High
+S20-T1,S20,Sub-task,Build Territory and Territory Location tables,,,"Territory,Automation,Phase4",Medium
+S20-T2,S20,Sub-task,Build coverage assignment tables,,,"Territory,Automation,Phase4",Medium
+S20-T3,S20,Sub-task,Build lead assignment logic,,,"Territory,Automation,Phase4",Medium
+S20-T4,S20,Sub-task,Build account and site ownership assignment logic,,,"Territory,Automation,Phase4",Medium
+S20-T5,S20,Sub-task,Build reassignment and override logic,,,"Territory,Automation,Phase4",Medium
+S20-T6,S20,Sub-task,Log routing decisions for auditability,,,"Territory,Automation,Phase4",Medium
+S20-T7,S20,Sub-task,Test territory edge cases and exceptions,,,"Territory,Automation,Phase4",Medium
+S21,,Story,"Activities, tasks, alerts, and work management","As a sales rep, I want my tasks, calls, appointments, and follow-ups organized so I can execute efficiently.",REPLACE_WITH_EPIC_KEY,"CoreCRM,Automation,Phase4",Medium
+S21-T1,S21,Sub-task,Configure activity forms and views,,,"CoreCRM,Automation,Phase4",Medium
+S21-T2,S21,Sub-task,Build activity timeline improvements where needed,,,"CoreCRM,Automation,Phase4",Medium
+S21-T3,S21,Sub-task,Create task and follow-up views by role,,,"CoreCRM,Automation,Phase4",Medium
+S21-T4,S21,Sub-task,Build alerts and reminders for stale leads and opportunities,,,"CoreCRM,Automation,Phase4",Medium
+S21-T5,S21,Sub-task,Configure dashboards for daily workload,,,"CoreCRM,Automation,Phase4",Medium
+S21-T6,S21,Sub-task,"Validate activity rollups on account, contact, and opportunity",,,"CoreCRM,Automation,Phase4",Medium
+S21-T7,S21,Sub-task,Test timeline and notification behavior,,,"CoreCRM,Automation,Phase4",Medium
+S22,,Story,"Dashboards, custom pages, and embedded HTML/CSS/JavaScript","As a user, I want a modern CRM experience so key information is easier to consume and act on.",REPLACE_WITH_EPIC_KEY,"UIUX,CustomPages,Phase4",High
+S22-T1,S22,Sub-task,Build role-based model-driven apps,,,"UIUX,CustomPages,Phase4",Medium
+S22-T2,S22,Sub-task,Build Account 360 page,,,"UIUX,CustomPages,Phase4",Medium
+S22-T3,S22,Sub-task,Build Lead workspace page,,,"UIUX,CustomPages,Phase4",Medium
+S22-T4,S22,Sub-task,Build Opportunity workspace page,,,"UIUX,CustomPages,Phase4",Medium
+S22-T5,S22,Sub-task,Build manager dashboard and executive dashboard,,,"UIUX,CustomPages,Phase4",Medium
+S22-T6,S22,Sub-task,"Develop approved HTML, CSS, JavaScript web resources or custom pages",,,"UIUX,CustomPages,Phase4",Medium
+S22-T7,S22,Sub-task,"Test security trimming, responsiveness, and load performance",,,"UIUX,CustomPages,Phase4",Medium
+S23,,Story,Data Warehouse integration framework and Boomi replacement,"As an integration team, we want a direct Data Warehouse to CRM framework so the new system no longer depends on Boomi.",REPLACE_WITH_EPIC_KEY,"Integration-DW,Phase5",High
+S23-T1,S23,Sub-task,Build integration entry pattern and staging model,,,"Integration-DW,Phase5",Medium
+S23-T2,S23,Sub-task,Build reusable integration logging framework,,,"Integration-DW,Phase5",Medium
+S23-T3,S23,Sub-task,Define and implement upsert pattern using alternate keys,,,"Integration-DW,Phase5",Medium
+S23-T4,S23,Sub-task,Build error handling and retry process,,,"Integration-DW,Phase5",Medium
+S23-T5,S23,Sub-task,Create interface control documentation,,,"Integration-DW,Phase5",Medium
+S23-T6,S23,Sub-task,Execute side-by-side validation against current outputs,,,"Integration-DW,Phase5",Medium
+S23-T7,S23,Sub-task,Plan and execute Boomi switch-off,,,"Integration-DW,Phase5",Medium
+S24,,Story,Data Warehouse master data synchronization,"As a business user, I want customer and reference data synchronized from the Data Warehouse so CRM stays current.",REPLACE_WITH_EPIC_KEY,"Integration-DW,Phase5",High
+S24-T1,S24,Sub-task,Build Accounts sync,,,"Integration-DW,Phase5",Medium
+S24-T2,S24,Sub-task,Build Contacts sync,,,"Integration-DW,Phase5",Medium
+S24-T3,S24,Sub-task,Build Customer Locations sync,,,"Integration-DW,Phase5",Medium
+S24-T4,S24,Sub-task,Build Products sync,,,"Integration-DW,Phase5",Medium
+S24-T5,S24,Sub-task,Build territory and geo mapping sync,,,"Integration-DW,Phase5",Medium
+S24-T6,S24,Sub-task,Build owner assignment support fields from source data,,,"Integration-DW,Phase5",Medium
+S24-T7,S24,Sub-task,Reconcile loaded data against source extracts,,,"Integration-DW,Phase5",Medium
+S25,,Story,Dotdigital integration,"As a marketing and sales user, I want Dotdigital integrated so engagement and consent data are aligned with CRM.",REPLACE_WITH_EPIC_KEY,"Integration-Dotdigital,Phase5",High
+S25-T1,S25,Sub-task,"Define field mapping for contacts, leads, and accounts",,,"Integration-Dotdigital,Phase5",Medium
+S25-T2,S25,Sub-task,"Define consent, subscription, and suppression rules",,,"Integration-Dotdigital,Phase5",Medium
+S25-T3,S25,Sub-task,Define segment and export logic,,,"Integration-Dotdigital,Phase5",Medium
+S25-T4,S25,Sub-task,Build or configure campaign response and engagement sync,,,"Integration-Dotdigital,Phase5",Medium
+S25-T5,S25,Sub-task,Surface engagement summary on CRM records,,,"Integration-Dotdigital,Phase5",Medium
+S25-T6,S25,Sub-task,Build integration monitoring and exception handling,,,"Integration-Dotdigital,Phase5",Medium
+S25-T7,S25,Sub-task,Validate end-to-end sync with marketing team,,,"Integration-Dotdigital,Phase5",Medium
+S26,,Story,Finance and Operations invoice visibility,"As a sales user, I want invoice visibility from Finance and Operations so I can understand customer financial context without leaving CRM.",REPLACE_WITH_EPIC_KEY,"Integration-FO,Phase5",High
+S26-T1,S26,Sub-task,Define invoice data required in CRM,,,"Integration-FO,Phase5",Medium
+S26-T2,S26,Sub-task,Design invoice summary and read-only data model,,,"Integration-FO,Phase5",Medium
+S26-T3,S26,Sub-task,Build sync or data exposure process,,,"Integration-FO,Phase5",Medium
+S26-T4,S26,Sub-task,Surface invoice history and aging on Account 360,,,"Integration-FO,Phase5",Medium
+S26-T5,S26,Sub-task,Build finance read-only views and dashboards,,,"Integration-FO,Phase5",Medium
+S26-T6,S26,Sub-task,Validate reconciliation with Finance and Operations team,,,"Integration-FO,Phase5",Medium
+S26-T7,S26,Sub-task,Test security access to finance data,,,"Integration-FO,Phase5",Medium
+S27,,Story,Integration monitoring and reconciliation,"As a support team, we want monitoring and reconciliation in place so integration issues are detected quickly.",REPLACE_WITH_EPIC_KEY,"Integration-DW,Monitoring,Phase5",High
+S27-T1,S27,Sub-task,Build integration run log tables and views,,,"Integration-DW,Monitoring,Phase5",Medium
+S27-T2,S27,Sub-task,Build failed-record and error queue handling,,,"Integration-DW,Monitoring,Phase5",Medium
+S27-T3,S27,Sub-task,Build reconciliation reports by object,,,"Integration-DW,Monitoring,Phase5",Medium
+S27-T4,S27,Sub-task,Build alerting for missed or failed loads,,,"Integration-DW,Monitoring,Phase5",Medium
+S27-T5,S27,Sub-task,Define daily and weekly support procedures,,,"Integration-DW,Monitoring,Phase5",Medium
+S27-T6,S27,Sub-task,Create runbooks for common failures,,,"Integration-DW,Monitoring,Phase5",Medium
+S28,,Story,"Data profiling, deduplication, and cleansing","As a data migration team, we want source data profiled and cleaned so only trusted data is loaded to the new CRM.",REPLACE_WITH_EPIC_KEY,"Migration,DataQuality,Phase6",High
+S28-T1,S28,Sub-task,"Profile Accounts, Contacts, Leads, Opportunities, Cases, Products, and Locations",,,"Migration,DataQuality,Phase6",Medium
+S28-T2,S28,Sub-task,Identify duplicate patterns and orphan records,,,"Migration,DataQuality,Phase6",Medium
+S28-T3,S28,Sub-task,"Clean invalid addresses, emails, phones, and reference values",,,"Migration,DataQuality,Phase6",Medium
+S28-T4,S28,Sub-task,Resolve ownership and territory mapping issues,,,"Migration,DataQuality,Phase6",Medium
+S28-T5,S28,Sub-task,Execute dedupe rules and survivorship decisions,,,"Migration,DataQuality,Phase6",Medium
+S28-T6,S28,Sub-task,Produce clean migration extracts,,,"Migration,DataQuality,Phase6",Medium
+S29,,Story,Trial migration cycles,"As a project team, we want trial migration cycles completed so final migration is predictable.",REPLACE_WITH_EPIC_KEY,"Migration,Phase6",High
+S29-T1,S29,Sub-task,Load sample migration data to DEV and TEST,,,"Migration,Phase6",Medium
+S29-T2,S29,Sub-task,Validate field mappings and relationships,,,"Migration,Phase6",Medium
+S29-T3,S29,Sub-task,"Validate converted users, owners, and teams",,,"Migration,Phase6",Medium
+S29-T4,S29,Sub-task,Validate data volumes and performance,,,"Migration,Phase6",Medium
+S29-T5,S29,Sub-task,Run business validation workshops on migrated data,,,"Migration,Phase6",Medium
+S29-T6,S29,Sub-task,Fix mapping issues and repeat as needed,,,"Migration,Phase6",Medium
+S30,,Story,Final migration preparation and production load,"As a cutover team, we want final migration scripts and production load procedures ready so go-live is controlled.",REPLACE_WITH_EPIC_KEY,"Migration,Cutover,Phase6",High
+S30-T1,S30,Sub-task,Finalize production migration runbook,,,"Migration,Cutover,Phase6",Medium
+S30-T2,S30,Sub-task,Finalize cutover extracts and transformation scripts,,,"Migration,Cutover,Phase6",Medium
+S30-T3,S30,Sub-task,Freeze source data rules for cutover window,,,"Migration,Cutover,Phase6",Medium
+S30-T4,S30,Sub-task,Prepare rollback and contingency plan,,,"Migration,Cutover,Phase6",Medium
+S30-T5,S30,Sub-task,Load production data during cutover,,,"Migration,Cutover,Phase6",Medium
+S30-T6,S30,Sub-task,Execute post-load validation and sign-off,,,"Migration,Cutover,Phase6",Medium
+S31,,Story,System integration testing and user acceptance testing,"As a business owner, I want the solution fully tested so the new CRM is ready for production use.",REPLACE_WITH_EPIC_KEY,"Testing,Phase7",High
+S31-T1,S31,Sub-task,Create SIT test scripts by process area,,,"Testing,Phase7",Medium
+S31-T2,S31,Sub-task,"Execute SIT across CRM, Data Warehouse, Dotdigital, and Finance and Operations touchpoints",,,"Testing,Phase7",Medium
+S31-T3,S31,Sub-task,Create UAT scripts and expected outcomes,,,"Testing,Phase7",Medium
+S31-T4,S31,Sub-task,Run UAT with business users,,,"Testing,Phase7",Medium
+S31-T5,S31,Sub-task,Log and triage defects,,,"Testing,Phase7",Medium
+S31-T6,S31,Sub-task,Retest fixes and obtain sign-off,,,"Testing,Phase7",Medium
+S32,,Story,"Security, performance, and regression validation","As a platform owner, I want non-functional validation completed so the system is secure and reliable.",REPLACE_WITH_EPIC_KEY,"Testing,Security,Phase7",High
+S32-T1,S32,Sub-task,Execute security role and hierarchy access testing,,,"Testing,Security,Phase7",Medium
+S32-T2,S32,Sub-task,Validate field-level and record-level permissions,,,"Testing,Security,Phase7",Medium
+S32-T3,S32,Sub-task,"Execute performance tests for forms, views, dashboards, and integrations",,,"Testing,Security,Phase7",Medium
+S32-T4,S32,Sub-task,Execute regression test pack after major releases,,,"Testing,Security,Phase7",Medium
+S32-T5,S32,Sub-task,Validate audit logging and monitoring coverage,,,"Testing,Security,Phase7",Medium
+S32-T6,S32,Sub-task,Sign off on non-functional readiness,,,"Testing,Security,Phase7",Medium
+S33,,Story,Training and change management,"As an end user, I want training and support materials so I can adopt the new CRM confidently.",REPLACE_WITH_EPIC_KEY,"Training,ChangeManagement,Phase7",Medium
+S33-T1,S33,Sub-task,Create role-based training plan,,,"Training,ChangeManagement,Phase7",Medium
+S33-T2,S33,Sub-task,Create training guides and quick reference sheets,,,"Training,ChangeManagement,Phase7",Medium
+S33-T3,S33,Sub-task,Create admin support guide,,,"Training,ChangeManagement,Phase7",Medium
+S33-T4,S33,Sub-task,Train super users and champions,,,"Training,ChangeManagement,Phase7",Medium
+S33-T5,S33,Sub-task,Run end-user training sessions,,,"Training,ChangeManagement,Phase7",Medium
+S33-T6,S33,Sub-task,Capture feedback and refine materials,,,"Training,ChangeManagement,Phase7",Medium
+S34,,Story,Cutover planning and go-live readiness,"As a project team, we want a complete cutover plan so go-live happens in a controlled manner.",REPLACE_WITH_EPIC_KEY,"Cutover,Phase7",High
+S34-T1,S34,Sub-task,Create detailed cutover checklist,,,"Cutover,Phase7",Medium
+S34-T2,S34,Sub-task,Define go and no-go criteria,,,"Cutover,Phase7",Medium
+S34-T3,S34,Sub-task,Define freeze window and communications,,,"Cutover,Phase7",Medium
+S34-T4,S34,Sub-task,Confirm production support coverage and escalation matrix,,,"Cutover,Phase7",Medium
+S34-T5,S34,Sub-task,Confirm final deployment package and migration readiness,,,"Cutover,Phase7",Medium
+S34-T6,S34,Sub-task,Hold cutover rehearsal and readiness review,,,"Cutover,Phase7",Medium
+S35,,Story,Production deployment and go-live,"As a project sponsor, I want the new CRM deployed successfully so the business can transition to the new platform.",REPLACE_WITH_EPIC_KEY,"Cutover,GoLive,Phase8",High
+S35-T1,S35,Sub-task,Deploy production solution components,,,"Cutover,GoLive,Phase8",Medium
+S35-T2,S35,Sub-task,Execute production data migration,,,"Cutover,GoLive,Phase8",Medium
+S35-T3,S35,Sub-task,Enable integrations and scheduled jobs,,,"Cutover,GoLive,Phase8",Medium
+S35-T4,S35,Sub-task,Execute smoke testing,,,"Cutover,GoLive,Phase8",Medium
+S35-T5,S35,Sub-task,"Validate critical reports, dashboards, and record access",,,"Cutover,GoLive,Phase8",Medium
+S35-T6,S35,Sub-task,Obtain go-live approval and announce launch,,,"Cutover,GoLive,Phase8",Medium
+S36,,Story,Hypercare and support transition,"As a support organization, we want hypercare completed and ownership transitioned so the system remains stable after launch.",REPLACE_WITH_EPIC_KEY,"Hypercare,Support,Phase8",Medium
+S36-T1,S36,Sub-task,Stand up hypercare team and support channel,,,"Hypercare,Support,Phase8",Medium
+S36-T2,S36,Sub-task,Monitor production issues and prioritize fixes,,,"Hypercare,Support,Phase8",Medium
+S36-T3,S36,Sub-task,Reconcile integration and data issues daily,,,"Hypercare,Support,Phase8",Medium
+S36-T4,S36,Sub-task,Track adoption metrics and user feedback,,,"Hypercare,Support,Phase8",Medium
+S36-T5,S36,Sub-task,Transition support to steady-state operations,,,"Hypercare,Support,Phase8",Medium
+S36-T6,S36,Sub-task,Conduct lessons learned and closeout review,,,"Hypercare,Support,Phase8",Medium
