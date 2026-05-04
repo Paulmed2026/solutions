@@ -1,1 +1,130 @@
-ï»¿
+# ============================================================
+# Export enabled interactive Dynamics 365 / Dataverse users
+# who do NOT have an active environment license
+#
+# Criteria:
+#   isdisabled = false
+#   islicensed = false
+#   accessmode = 0  # Read-Write / normal interactive users
+#
+# This script does NOT disable users.
+# It only exports the report.
+# ============================================================
+
+[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
+
+Import-Module Microsoft.Xrm.Tooling.CrmConnector.PowerShell
+Import-Module Microsoft.Xrm.Data.PowerShell
+
+# =========================
+# CONFIGURATION
+# =========================
+
+$EnvironmentUrl = "https://YOURORG.crm.dynamics.com"
+$ExportPath = "C:\Temp\D365_Enabled_Interactive_Users_Without_License.csv"
+
+$ExportFolder = Split-Path $ExportPath
+if (!(Test-Path $ExportFolder)) {
+    New-Item -ItemType Directory -Path $ExportFolder -Force | Out-Null
+}
+
+# =========================
+# CONNECT
+# =========================
+
+Write-Host "Connecting to Dataverse..." -ForegroundColor Cyan
+
+$CRMConn = Get-CrmConnection -InteractiveMode -ServerUrl $EnvironmentUrl
+
+if ($null -eq $CRMConn -or $CRMConn.IsReady -ne $true) {
+    Write-Host "Connection failed. Check your environment URL and permissions." -ForegroundColor Red
+    return
+}
+
+Write-Host "Connected successfully to $EnvironmentUrl" -ForegroundColor Green
+
+# =========================
+# FETCH ENABLED INTERACTIVE USERS WITHOUT LICENSE
+# =========================
+
+$FetchXml = @"
+<fetch version='1.0' mapping='logical' distinct='false'>
+  <entity name='systemuser'>
+    <attribute name='systemuserid' />
+    <attribute name='fullname' />
+    <attribute name='domainname' />
+    <attribute name='internalemailaddress' />
+    <attribute name='title' />
+    <attribute name='department' />
+    <attribute name='isdisabled' />
+    <attribute name='islicensed' />
+    <attribute name='accessmode' />
+    <attribute name='businessunitid' />
+    <order attribute='fullname' descending='false' />
+    <filter type='and'>
+      <condition attribute='isdisabled' operator='eq' value='0' />
+      <condition attribute='islicensed' operator='eq' value='0' />
+      <condition attribute='accessmode' operator='eq' value='0' />
+    </filter>
+  </entity>
+</fetch>
+"@
+
+Write-Host "Retrieving enabled interactive users without an active license..." -ForegroundColor Cyan
+
+$QueryResult = Get-CrmRecordsByFetch -conn $CRMConn -Fetch $FetchXml -AllRows
+$Users = $QueryResult.CrmRecords
+
+Write-Host "Users found: $($Users.Count)" -ForegroundColor Yellow
+
+if ($null -eq $Users -or $Users.Count -eq 0) {
+    Write-Host "No enabled interactive users without an active license were found." -ForegroundColor Green
+    return
+}
+
+# =========================
+# FORMAT RESULTS
+# =========================
+
+$Results = foreach ($User in $Users) {
+    [PSCustomObject]@{
+        SystemUserId      = $User.systemuserid
+        DisplayName       = $User.fullname
+        UserPrincipalName = $User.domainname
+        Email             = $User.internalemailaddress
+        JobTitle          = $User.title
+        Department        = $User.department
+        BusinessUnit      = $User.businessunitid
+        IsDisabled        = $User.isdisabled
+        IsLicensed        = $User.islicensed
+        AccessMode        = $User.accessmode
+        UserType          = "Interactive / Read-Write"
+        LicenseStatus     = "No Active Environment License"
+    }
+}
+
+# =========================
+# EXPORT
+# =========================
+
+$Results |
+    Sort-Object DisplayName |
+    Export-Csv $ExportPath -NoTypeInformation -Encoding UTF8
+
+$Results |
+    Sort-Object DisplayName |
+    Format-Table `
+        DisplayName,
+        UserPrincipalName,
+        Email,
+        IsDisabled,
+        IsLicensed,
+        AccessMode,
+        UserType,
+        LicenseStatus `
+        -AutoSize
+
+Write-Host ""
+Write-Host "Export completed successfully." -ForegroundColor Green
+Write-Host "Total enabled interactive unlicensed users found: $($Results.Count)" -ForegroundColor Green
+Write-Host "File exported to: $ExportPath" -ForegroundColor Green
