@@ -130,5 +130,176 @@ $Results |
 
 Write-Host ""
 Write-Host "Export completed successfully." -ForegroundColor Green
+
+//////////////////////////////////
+
+
+# ============================================================
+# Export users with Dynamics 365 Sales Enterprise Edition license
+# Includes Last Login / Sign-In Activity
+# SKU: DYN365_ENTERPRISE_SALES
+# ============================================================
+
+Install-Module Microsoft.Graph -Scope CurrentUser -Force
+
+Connect-MgGraph -Scopes `
+    "User.Read.All", `
+    "Group.Read.All", `
+    "Organization.Read.All", `
+    "AuditLog.Read.All"
+
+# =========================
+# CONFIGURATION
+# =========================
+
+$TargetSkuPartNumber = "DYN365_ENTERPRISE_SALES"
+$ExportPath = "C:\Temp\Dynamics365_Sales_Enterprise_Licensed_Users_With_LastLogin.csv"
+
+# Set to $true if you only want enabled users
+$OnlyEnabledUsers = $true
+
+$ExportFolder = Split-Path $ExportPath
+if (!(Test-Path $ExportFolder)) {
+    New-Item -ItemType Directory -Path $ExportFolder -Force | Out-Null
+}
+
+# =========================
+# GET TARGET SKU
+# =========================
+
+$TargetSku = Get-MgSubscribedSku -All |
+    Where-Object { $_.SkuPartNumber -eq $TargetSkuPartNumber }
+
+if ($null -eq $TargetSku) {
+    Write-Host "License SKU not found: $TargetSkuPartNumber" -ForegroundColor Red
+    Write-Host ""
+    Write-Host "Available Dynamics/Sales-related SKUs:" -ForegroundColor Yellow
+
+    Get-MgSubscribedSku -All |
+        Where-Object {
+            $_.SkuPartNumber -like "*DYN*" -or
+            $_.SkuPartNumber -like "*SALES*"
+        } |
+        Select-Object SkuPartNumber, SkuId, ConsumedUnits |
+        Sort-Object SkuPartNumber |
+        Format-Table -AutoSize
+
+    return
+}
+
+$TargetSkuId = $TargetSku.SkuId.ToString()
+
+Write-Host "Target License: $($TargetSku.SkuPartNumber)" -ForegroundColor Cyan
+Write-Host "Target SkuId: $TargetSkuId" -ForegroundColor Cyan
+
+# =========================
+# GET USERS WITH THIS LICENSE + SIGN-IN ACTIVITY
+# =========================
+
+$Users = Get-MgUser `
+    -Filter "assignedLicenses/any(x:x/skuId eq $TargetSkuId)" `
+    -ConsistencyLevel eventual `
+    -CountVariable LicensedUserCount `
+    -All `
+    -Property "id,displayName,userPrincipalName,mail,jobTitle,department,accountEnabled,licenseAssignmentStates,signInActivity"
+
+Write-Host "Users found with $TargetSkuPartNumber before filtering: $LicensedUserCount" -ForegroundColor Green
+
+$GroupCache = @{}
+$Results = @()
+
+foreach ($User in $Users) {
+
+    if ($OnlyEnabledUsers -eq $true -and $User.AccountEnabled -ne $true) {
+        continue
+    }
+
+    $MatchingLicenseStates = $User.LicenseAssignmentStates |
+        Where-Object {
+            $_.SkuId.ToString() -eq $TargetSkuId -and
+            $_.State -eq "Active"
+        }
+
+    foreach ($LicenseState in $MatchingLicenseStates) {
+
+        $AssignmentType = "Direct"
+        $AssignedByGroupName = ""
+
+        if ($null -ne $LicenseState.AssignedByGroup -and $LicenseState.AssignedByGroup -ne "") {
+
+            $AssignmentType = "Inherited from Group"
+            $AssignedByGroupId = $LicenseState.AssignedByGroup
+
+            if ($GroupCache.ContainsKey($AssignedByGroupId)) {
+                $AssignedByGroupName = $GroupCache[$AssignedByGroupId]
+            }
+            else {
+                try {
+                    $Group = Get-MgGroup -GroupId $AssignedByGroupId -Property "displayName"
+                    $AssignedByGroupName = $Group.DisplayName
+                    $GroupCache[$AssignedByGroupId] = $AssignedByGroupName
+                }
+                catch {
+                    $AssignedByGroupName = "Unable to resolve group name"
+                    $GroupCache[$AssignedByGroupId] = $AssignedByGroupName
+                }
+            }
+        }
+
+        $LastSuccessfulSignInDateTime = ""
+        $LastInteractiveSignInDateTime = ""
+        $LastNonInteractiveSignInDateTime = ""
+
+        if ($null -ne $User.SignInActivity) {
+            $LastSuccessfulSignInDateTime = $User.SignInActivity.LastSuccessfulSignInDateTime
+            $LastInteractiveSignInDateTime = $User.SignInActivity.LastSignInDateTime
+            $LastNonInteractiveSignInDateTime = $User.SignInActivity.LastNonInteractiveSignInDateTime
+        }
+
+        $Results += [PSCustomObject]@{
+            DisplayName                      = $User.DisplayName
+            UserPrincipalName                = $User.UserPrincipalName
+            Email                            = $User.Mail
+            JobTitle                         = $User.JobTitle
+            Department                       = $User.Department
+            AccountEnabled                   = $User.AccountEnabled
+            LicenseName                      = "Dynamics 365 Sales Enterprise Edition"
+            SkuPartNumber                    = $TargetSku.SkuPartNumber
+            AssignmentType                   = $AssignmentType
+            AssignedByGroupName              = $AssignedByGroupName
+            AssignmentState                  = $LicenseState.State
+            AssignmentError                  = $LicenseState.Error
+            LastSuccessfulSignInDateTime     = $LastSuccessfulSignInDateTime
+            LastInteractiveSignInDateTime    = $LastInteractiveSignInDateTime
+            LastNonInteractiveSignInDateTime = $LastNonInteractiveSignInDateTime
+        }
+    }
+}
+
+# =========================
+# EXPORT
+# =========================
+
+$Results |
+    Sort-Object LastSuccessfulSignInDateTime, DisplayName |
+    Export-Csv $ExportPath -NoTypeInformation -Encoding UTF8
+
+$Results |
+    Sort-Object LastSuccessfulSignInDateTime, DisplayName |
+    Format-Table `
+        DisplayName,
+        UserPrincipalName,
+        AccountEnabled,
+        LicenseName,
+        AssignmentType,
+        AssignedByGroupName,
+        AssignmentState,
+        LastSuccessfulSignInDateTime `
+        -AutoSize
+
+Write-Host ""
+Write-Host "Export completed successfully." -ForegroundColor Green
+Write-Host "Total active Dynamics 365 Sales Enterprise license rows exported: $($Results.Count)" -ForegroundColor Green
+Write-Host "File exported to: $ExportPath" -ForegroundColor Green
 Write-Host "Total active Dynamics 365 Sales Enterprise license rows exported: $($Results.Count)" -ForegroundColor Green
 Write-Host "File exported to: $ExportPath" -ForegroundColor Green
