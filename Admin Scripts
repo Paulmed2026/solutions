@@ -1,305 +1,152 @@
 # ============================================================
-# Export users with Dynamics 365 Sales Enterprise Edition license
-# SKU: DYN365_ENTERPRISE_SALES
-# Includes direct and group-inherited assignments
+# Export enabled Dynamics 365 / Dataverse users
+# who do NOT have an active environment license
+#
+# Criteria:
+#   isdisabled = false
+#   islicensed = false
+#
+# This script does NOT disable users.
+# It only exports the report.
 # ============================================================
 
-Install-Module Microsoft.Graph -Scope CurrentUser -Force
+[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
 
-Connect-MgGraph -Scopes `
-    "User.Read.All", `
-    "Group.Read.All", `
-    "Organization.Read.All"
+# Install required modules if needed
+Install-Module Microsoft.Xrm.Tooling.CrmConnector.PowerShell -Scope CurrentUser -Force
+Install-Module Microsoft.Xrm.Data.PowerShell -Scope CurrentUser -Force
 
-# =========================
+Import-Module Microsoft.Xrm.Tooling.CrmConnector.PowerShell
+Import-Module Microsoft.Xrm.Data.PowerShell
+
+# ============================================================
 # CONFIGURATION
-# =========================
+# ============================================================
 
-$TargetSkuPartNumber = "DYN365_ENTERPRISE_SALES"
-$ExportPath = "C:\Temp\Dynamics365_Sales_Enterprise_Licensed_Users.csv"
+# Replace with your Dynamics 365 / Dataverse environment URL
+# Example: https://yourorg.crm.dynamics.com
+$EnvironmentUrl = "https://YOURORG.crm.dynamics.com"
 
+# Export path
+$ExportPath = "C:\Temp\D365_Enabled_Users_Without_Active_License.csv"
+
+# Set to $true if you only want normal human users
+# accessmode = 0 means Read-Write user
+$OnlyNormalReadWriteUsers = $true
+
+# Create export folder if it does not exist
 $ExportFolder = Split-Path $ExportPath
 if (!(Test-Path $ExportFolder)) {
     New-Item -ItemType Directory -Path $ExportFolder -Force | Out-Null
 }
 
-# =========================
-# GET TARGET SKU
-# =========================
+# ============================================================
+# CONNECT TO DATAVERSE
+# ============================================================
 
-$TargetSku = Get-MgSubscribedSku -All |
-    Where-Object { $_.SkuPartNumber -eq $TargetSkuPartNumber }
+Write-Host "Connecting to Dataverse environment..." -ForegroundColor Cyan
 
-if ($null -eq $TargetSku) {
-    Write-Host "License SKU not found: $TargetSkuPartNumber" -ForegroundColor Red
-    Write-Host ""
-    Write-Host "Available Dynamics/Sales-related SKUs:" -ForegroundColor Yellow
+$CRMConn = Get-CrmConnection -InteractiveMode -ServerUrl $EnvironmentUrl
 
-    Get-MgSubscribedSku -All |
-        Where-Object {
-            $_.SkuPartNumber -like "*DYN*" -or
-            $_.SkuPartNumber -like "*SALES*"
-        } |
-        Select-Object SkuPartNumber, SkuId, ConsumedUnits |
-        Sort-Object SkuPartNumber |
-        Format-Table -AutoSize
-
+if ($null -eq $CRMConn -or $CRMConn.IsReady -ne $true) {
+    Write-Host "Connection failed. Please check your environment URL and permissions." -ForegroundColor Red
     return
 }
 
-$TargetSkuId = $TargetSku.SkuId
+Write-Host "Connected successfully to $EnvironmentUrl" -ForegroundColor Green
 
-Write-Host "Target License: $($TargetSku.SkuPartNumber)" -ForegroundColor Cyan
-Write-Host "Target SkuId: $TargetSkuId" -ForegroundColor Cyan
-
-# =========================
-# GET USERS WITH THIS LICENSE
-# =========================
-
-$Users = Get-MgUser `
-    -Filter "assignedLicenses/any(x:x/skuId eq $TargetSkuId)" `
-    -ConsistencyLevel eventual `
-    -CountVariable LicensedUserCount `
-    -All `
-    -Property "id,displayName,userPrincipalName,mail,jobTitle,department,accountEnabled,licenseAssignmentStates"
-
-Write-Host "Users found with $TargetSkuPartNumber: $LicensedUserCount" -ForegroundColor Green
-
-$GroupCache = @{}
-$Results = @()
-
-foreach ($User in $Users) {
-
-    $MatchingLicenseStates = $User.LicenseAssignmentStates |
-        Where-Object { $_.SkuId -eq $TargetSkuId -and $_.State -eq "Active" }
-
-    foreach ($LicenseState in $MatchingLicenseStates) {
-
-        $AssignmentType = "Direct"
-        $AssignedByGroupName = ""
-
-        if ($null -ne $LicenseState.AssignedByGroup -and $LicenseState.AssignedByGroup -ne "") {
-
-            $AssignmentType = "Inherited from Group"
-            $AssignedByGroupId = $LicenseState.AssignedByGroup
-
-            if ($GroupCache.ContainsKey($AssignedByGroupId)) {
-                $AssignedByGroupName = $GroupCache[$AssignedByGroupId]
-            }
-            else {
-                try {
-                    $Group = Get-MgGroup -GroupId $AssignedByGroupId -Property "displayName"
-                    $AssignedByGroupName = $Group.DisplayName
-                    $GroupCache[$AssignedByGroupId] = $AssignedByGroupName
-                }
-                catch {
-                    $AssignedByGroupName = "Unable to resolve group name"
-                    $GroupCache[$AssignedByGroupId] = $AssignedByGroupName
-                }
-            }
-        }
-
-        $Results += [PSCustomObject]@{
-            DisplayName         = $User.DisplayName
-            UserPrincipalName   = $User.UserPrincipalName
-            Email               = $User.Mail
-            JobTitle            = $User.JobTitle
-            Department          = $User.Department
-            AccountEnabled      = $User.AccountEnabled
-            LicenseName         = "Dynamics 365 Sales Enterprise Edition"
-            SkuPartNumber       = $TargetSku.SkuPartNumber
-            AssignmentType      = $AssignmentType
-            AssignedByGroupName = $AssignedByGroupName
-            AssignmentState     = $LicenseState.State
-            AssignmentError     = $LicenseState.Error
-        }
-    }
-}
-
-# =========================
-# EXPORT
-# =========================
-
-$Results |
-    Sort-Object AssignmentType, AssignedByGroupName, DisplayName |
-    Export-Csv $ExportPath -NoTypeInformation -Encoding UTF8
-
-$Results |
-    Sort-Object AssignmentType, AssignedByGroupName, DisplayName |
-    Format-Table -AutoSize
-
-Write-Host ""
-Write-Host "Export completed successfully." -ForegroundColor Green
-
-//////////////////////////////////
-
+# Microsoft XRM Tooling PowerShell supports connecting to Dataverse/Dynamics environments using Get-CrmConnection. :contentReference[oaicite:1]{index=1}
 
 # ============================================================
-# Export users with Dynamics 365 Sales Enterprise Edition license
-# Includes Last Login / Sign-In Activity
-# SKU: DYN365_ENTERPRISE_SALES
+# BUILD FETCHXML QUERY
 # ============================================================
 
-Install-Module Microsoft.Graph -Scope CurrentUser -Force
+$AccessModeFilter = ""
 
-Connect-MgGraph -Scopes `
-    "User.Read.All", `
-    "Group.Read.All", `
-    "Organization.Read.All", `
-    "AuditLog.Read.All"
-
-# =========================
-# CONFIGURATION
-# =========================
-
-$TargetSkuPartNumber = "DYN365_ENTERPRISE_SALES"
-$ExportPath = "C:\Temp\Dynamics365_Sales_Enterprise_Licensed_Users_With_LastLogin.csv"
-
-# Set to $true if you only want enabled users
-$OnlyEnabledUsers = $true
-
-$ExportFolder = Split-Path $ExportPath
-if (!(Test-Path $ExportFolder)) {
-    New-Item -ItemType Directory -Path $ExportFolder -Force | Out-Null
+if ($OnlyNormalReadWriteUsers -eq $true) {
+    $AccessModeFilter = "<condition attribute='accessmode' operator='eq' value='0' />"
 }
 
-# =========================
-# GET TARGET SKU
-# =========================
+$FetchXml = @"
+<fetch version='1.0' mapping='logical' distinct='false'>
+  <entity name='systemuser'>
+    <attribute name='systemuserid' />
+    <attribute name='fullname' />
+    <attribute name='domainname' />
+    <attribute name='internalemailaddress' />
+    <attribute name='title' />
+    <attribute name='department' />
+    <attribute name='isdisabled' />
+    <attribute name='islicensed' />
+    <attribute name='accessmode' />
+    <attribute name='businessunitid' />
+    <order attribute='fullname' descending='false' />
+    <filter type='and'>
+      <condition attribute='isdisabled' operator='eq' value='0' />
+      <condition attribute='islicensed' operator='eq' value='0' />
+      $AccessModeFilter
+    </filter>
+  </entity>
+</fetch>
+"@
 
-$TargetSku = Get-MgSubscribedSku -All |
-    Where-Object { $_.SkuPartNumber -eq $TargetSkuPartNumber }
+# ============================================================
+# RETRIEVE USERS
+# ============================================================
 
-if ($null -eq $TargetSku) {
-    Write-Host "License SKU not found: $TargetSkuPartNumber" -ForegroundColor Red
-    Write-Host ""
-    Write-Host "Available Dynamics/Sales-related SKUs:" -ForegroundColor Yellow
+Write-Host "Retrieving enabled users without an active license..." -ForegroundColor Cyan
 
-    Get-MgSubscribedSku -All |
-        Where-Object {
-            $_.SkuPartNumber -like "*DYN*" -or
-            $_.SkuPartNumber -like "*SALES*"
-        } |
-        Select-Object SkuPartNumber, SkuId, ConsumedUnits |
-        Sort-Object SkuPartNumber |
-        Format-Table -AutoSize
+$QueryResult = Get-CrmRecordsByFetch -conn $CRMConn -Fetch $FetchXml -AllRows
+$Users = $QueryResult.CrmRecords
 
+if ($null -eq $Users -or $Users.Count -eq 0) {
+    Write-Host "No enabled users without an active license were found." -ForegroundColor Green
     return
 }
 
-$TargetSkuId = $TargetSku.SkuId.ToString()
+# ============================================================
+# FORMAT RESULTS
+# ============================================================
 
-Write-Host "Target License: $($TargetSku.SkuPartNumber)" -ForegroundColor Cyan
-Write-Host "Target SkuId: $TargetSkuId" -ForegroundColor Cyan
+$Results = foreach ($User in $Users) {
 
-# =========================
-# GET USERS WITH THIS LICENSE + SIGN-IN ACTIVITY
-# =========================
-
-$Users = Get-MgUser `
-    -Filter "assignedLicenses/any(x:x/skuId eq $TargetSkuId)" `
-    -ConsistencyLevel eventual `
-    -CountVariable LicensedUserCount `
-    -All `
-    -Property "id,displayName,userPrincipalName,mail,jobTitle,department,accountEnabled,licenseAssignmentStates,signInActivity"
-
-Write-Host "Users found with $TargetSkuPartNumber before filtering: $LicensedUserCount" -ForegroundColor Green
-
-$GroupCache = @{}
-$Results = @()
-
-foreach ($User in $Users) {
-
-    if ($OnlyEnabledUsers -eq $true -and $User.AccountEnabled -ne $true) {
-        continue
-    }
-
-    $MatchingLicenseStates = $User.LicenseAssignmentStates |
-        Where-Object {
-            $_.SkuId.ToString() -eq $TargetSkuId -and
-            $_.State -eq "Active"
-        }
-
-    foreach ($LicenseState in $MatchingLicenseStates) {
-
-        $AssignmentType = "Direct"
-        $AssignedByGroupName = ""
-
-        if ($null -ne $LicenseState.AssignedByGroup -and $LicenseState.AssignedByGroup -ne "") {
-
-            $AssignmentType = "Inherited from Group"
-            $AssignedByGroupId = $LicenseState.AssignedByGroup
-
-            if ($GroupCache.ContainsKey($AssignedByGroupId)) {
-                $AssignedByGroupName = $GroupCache[$AssignedByGroupId]
-            }
-            else {
-                try {
-                    $Group = Get-MgGroup -GroupId $AssignedByGroupId -Property "displayName"
-                    $AssignedByGroupName = $Group.DisplayName
-                    $GroupCache[$AssignedByGroupId] = $AssignedByGroupName
-                }
-                catch {
-                    $AssignedByGroupName = "Unable to resolve group name"
-                    $GroupCache[$AssignedByGroupId] = $AssignedByGroupName
-                }
-            }
-        }
-
-        $LastSuccessfulSignInDateTime = ""
-        $LastInteractiveSignInDateTime = ""
-        $LastNonInteractiveSignInDateTime = ""
-
-        if ($null -ne $User.SignInActivity) {
-            $LastSuccessfulSignInDateTime = $User.SignInActivity.LastSuccessfulSignInDateTime
-            $LastInteractiveSignInDateTime = $User.SignInActivity.LastSignInDateTime
-            $LastNonInteractiveSignInDateTime = $User.SignInActivity.LastNonInteractiveSignInDateTime
-        }
-
-        $Results += [PSCustomObject]@{
-            DisplayName                      = $User.DisplayName
-            UserPrincipalName                = $User.UserPrincipalName
-            Email                            = $User.Mail
-            JobTitle                         = $User.JobTitle
-            Department                       = $User.Department
-            AccountEnabled                   = $User.AccountEnabled
-            LicenseName                      = "Dynamics 365 Sales Enterprise Edition"
-            SkuPartNumber                    = $TargetSku.SkuPartNumber
-            AssignmentType                   = $AssignmentType
-            AssignedByGroupName              = $AssignedByGroupName
-            AssignmentState                  = $LicenseState.State
-            AssignmentError                  = $LicenseState.Error
-            LastSuccessfulSignInDateTime     = $LastSuccessfulSignInDateTime
-            LastInteractiveSignInDateTime    = $LastInteractiveSignInDateTime
-            LastNonInteractiveSignInDateTime = $LastNonInteractiveSignInDateTime
-        }
+    [PSCustomObject]@{
+        SystemUserId       = $User.systemuserid
+        DisplayName        = $User.fullname
+        UserPrincipalName  = $User.domainname
+        Email              = $User.internalemailaddress
+        JobTitle           = $User.title
+        Department         = $User.department
+        BusinessUnit       = $User.businessunitid
+        IsDisabled         = $User.isdisabled
+        IsLicensed         = $User.islicensed
+        AccessMode         = $User.accessmode
+        LicenseStatus      = "No Active Environment License"
     }
 }
 
-# =========================
-# EXPORT
-# =========================
+# ============================================================
+# EXPORT TO CSV
+# ============================================================
 
 $Results |
-    Sort-Object LastSuccessfulSignInDateTime, DisplayName |
+    Sort-Object DisplayName |
     Export-Csv $ExportPath -NoTypeInformation -Encoding UTF8
 
+# Preview in PowerShell
 $Results |
-    Sort-Object LastSuccessfulSignInDateTime, DisplayName |
+    Sort-Object DisplayName |
     Format-Table `
         DisplayName,
         UserPrincipalName,
-        AccountEnabled,
-        LicenseName,
-        AssignmentType,
-        AssignedByGroupName,
-        AssignmentState,
-        LastSuccessfulSignInDateTime `
+        Email,
+        IsDisabled,
+        IsLicensed,
+        AccessMode,
+        LicenseStatus `
         -AutoSize
 
 Write-Host ""
 Write-Host "Export completed successfully." -ForegroundColor Green
-Write-Host "Total active Dynamics 365 Sales Enterprise license rows exported: $($Results.Count)" -ForegroundColor Green
-Write-Host "File exported to: $ExportPath" -ForegroundColor Green
-Write-Host "Total active Dynamics 365 Sales Enterprise license rows exported: $($Results.Count)" -ForegroundColor Green
+Write-Host "Total users found: $($Results.Count)" -ForegroundColor Green
 Write-Host "File exported to: $ExportPath" -ForegroundColor Green
