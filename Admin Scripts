@@ -1,15 +1,27 @@
 SELECT
-    fullname AS DisplayName,
-    domainname AS UserPrincipalName,
-    internalemailaddress AS Email,
-    title AS JobTitle,
-    department AS Department,
-    isdisabled AS IsDisabled,
-    islicensed AS IsLicensed,
-    accessmode AS AccessMode
+    su.fullname AS DisplayName,
+    su.domainname AS UserPrincipalName,
+    su.internalemailaddress AS Email,
+    su.title AS JobTitle,
+    su.isdisabled AS IsDisabled,
+    su.islicensed AS IsLicensed,
+    su.accessmode AS AccessMode,
+    MAX(a.createdon) AS LastLoginDate
 FROM
-    systemuser
+    systemuser su
+LEFT JOIN
+    audit a
+    ON a.objectid = su.systemuserid
+    AND a.operation = 4
 WHERE
-    islicensed = 1
+    su.islicensed = 1
+GROUP BY
+    su.fullname,
+    su.domainname,
+    su.internalemailaddress,
+    su.title,
+    su.isdisabled,
+    su.islicensed,
+    su.accessmode
 ORDER BY
-    fullname
+    MAX(a.createdon) DESC
