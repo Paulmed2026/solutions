@@ -10,5 +10,6 @@ FROM
 WHERE
     isdisabled = 0
     AND islicensed = 0
+    AND accessmode = 0
 ORDER BY
     fullname
