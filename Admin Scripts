@@ -1,1 +1,134 @@
-Dynamics 365 Sales Enterprise Edition
+# ============================================================
+# Export users with Dynamics 365 Sales Enterprise Edition license
+# SKU: DYN365_ENTERPRISE_SALES
+# Includes direct and group-inherited assignments
+# ============================================================
+
+Install-Module Microsoft.Graph -Scope CurrentUser -Force
+
+Connect-MgGraph -Scopes `
+    "User.Read.All", `
+    "Group.Read.All", `
+    "Organization.Read.All"
+
+# =========================
+# CONFIGURATION
+# =========================
+
+$TargetSkuPartNumber = "DYN365_ENTERPRISE_SALES"
+$ExportPath = "C:\Temp\Dynamics365_Sales_Enterprise_Licensed_Users.csv"
+
+$ExportFolder = Split-Path $ExportPath
+if (!(Test-Path $ExportFolder)) {
+    New-Item -ItemType Directory -Path $ExportFolder -Force | Out-Null
+}
+
+# =========================
+# GET TARGET SKU
+# =========================
+
+$TargetSku = Get-MgSubscribedSku -All |
+    Where-Object { $_.SkuPartNumber -eq $TargetSkuPartNumber }
+
+if ($null -eq $TargetSku) {
+    Write-Host "License SKU not found: $TargetSkuPartNumber" -ForegroundColor Red
+    Write-Host ""
+    Write-Host "Available Dynamics/Sales-related SKUs:" -ForegroundColor Yellow
+
+    Get-MgSubscribedSku -All |
+        Where-Object {
+            $_.SkuPartNumber -like "*DYN*" -or
+            $_.SkuPartNumber -like "*SALES*"
+        } |
+        Select-Object SkuPartNumber, SkuId, ConsumedUnits |
+        Sort-Object SkuPartNumber |
+        Format-Table -AutoSize
+
+    return
+}
+
+$TargetSkuId = $TargetSku.SkuId
+
+Write-Host "Target License: $($TargetSku.SkuPartNumber)" -ForegroundColor Cyan
+Write-Host "Target SkuId: $TargetSkuId" -ForegroundColor Cyan
+
+# =========================
+# GET USERS WITH THIS LICENSE
+# =========================
+
+$Users = Get-MgUser `
+    -Filter "assignedLicenses/any(x:x/skuId eq $TargetSkuId)" `
+    -ConsistencyLevel eventual `
+    -CountVariable LicensedUserCount `
+    -All `
+    -Property "id,displayName,userPrincipalName,mail,jobTitle,department,accountEnabled,licenseAssignmentStates"
+
+Write-Host "Users found with $TargetSkuPartNumber: $LicensedUserCount" -ForegroundColor Green
+
+$GroupCache = @{}
+$Results = @()
+
+foreach ($User in $Users) {
+
+    $MatchingLicenseStates = $User.LicenseAssignmentStates |
+        Where-Object { $_.SkuId -eq $TargetSkuId -and $_.State -eq "Active" }
+
+    foreach ($LicenseState in $MatchingLicenseStates) {
+
+        $AssignmentType = "Direct"
+        $AssignedByGroupName = ""
+
+        if ($null -ne $LicenseState.AssignedByGroup -and $LicenseState.AssignedByGroup -ne "") {
+
+            $AssignmentType = "Inherited from Group"
+            $AssignedByGroupId = $LicenseState.AssignedByGroup
+
+            if ($GroupCache.ContainsKey($AssignedByGroupId)) {
+                $AssignedByGroupName = $GroupCache[$AssignedByGroupId]
+            }
+            else {
+                try {
+                    $Group = Get-MgGroup -GroupId $AssignedByGroupId -Property "displayName"
+                    $AssignedByGroupName = $Group.DisplayName
+                    $GroupCache[$AssignedByGroupId] = $AssignedByGroupName
+                }
+                catch {
+                    $AssignedByGroupName = "Unable to resolve group name"
+                    $GroupCache[$AssignedByGroupId] = $AssignedByGroupName
+                }
+            }
+        }
+
+        $Results += [PSCustomObject]@{
+            DisplayName         = $User.DisplayName
+            UserPrincipalName   = $User.UserPrincipalName
+            Email               = $User.Mail
+            JobTitle            = $User.JobTitle
+            Department          = $User.Department
+            AccountEnabled      = $User.AccountEnabled
+            LicenseName         = "Dynamics 365 Sales Enterprise Edition"
+            SkuPartNumber       = $TargetSku.SkuPartNumber
+            AssignmentType      = $AssignmentType
+            AssignedByGroupName = $AssignedByGroupName
+            AssignmentState     = $LicenseState.State
+            AssignmentError     = $LicenseState.Error
+        }
+    }
+}
+
+# =========================
+# EXPORT
+# =========================
+
+$Results |
+    Sort-Object AssignmentType, AssignedByGroupName, DisplayName |
+    Export-Csv $ExportPath -NoTypeInformation -Encoding UTF8
+
+$Results |
+    Sort-Object AssignmentType, AssignedByGroupName, DisplayName |
+    Format-Table -AutoSize
+
+Write-Host ""
+Write-Host "Export completed successfully." -ForegroundColor Green
+Write-Host "Total active Dynamics 365 Sales Enterprise license rows exported: $($Results.Count)" -ForegroundColor Green
+Write-Host "File exported to: $ExportPath" -ForegroundColor Green
