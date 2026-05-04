@@ -1,17 +1,1 @@
-SELECT
-    fullname AS DisplayName,
-    domainname AS UserPrincipalName,
-    internalemailaddress AS Email,
-    title AS JobTitle,
-    department AS Department,
-    isdisabled AS IsDisabled,
-    islicensed AS IsLicensed,
-    accessmode AS AccessMode
-FROM
-    systemuser
-WHERE
-    islicensed = 1
-    AND isdisabled = 0
-    AND accessmode = 0
-ORDER BY
-    fullname
+Dynamics 365 Sales Enterprise Edition
