@@ -1,30 +1,17 @@
 SELECT
-    su.fullname AS DisplayName,
-    su.domainname AS UserPrincipalName,
-    su.internalemailaddress AS Email,
-    su.title AS JobTitle,
-   
-    su.isdisabled AS IsDisabled,
-    su.islicensed AS IsLicensed,
-    su.accessmode AS AccessMode,
-    MAX(a.createdon) AS LastLoginDate
+    fullname AS DisplayName,
+    domainname AS UserPrincipalName,
+    internalemailaddress AS Email,
+    title AS JobTitle,
+    department AS Department,
+    isdisabled AS IsDisabled,
+    islicensed AS IsLicensed,
+    accessmode AS AccessMode
 FROM
-    systemuser su
-LEFT JOIN
-    audit a
-    ON a.objectid = su.systemuserid
-    AND a.operation = 4
-    AND a.createdon >= '2025-11-01'
+    systemuser
 WHERE
-    su.islicensed = 1
-    AND su.isdisabled = 0
-GROUP BY
-    su.fullname,
-    su.domainname,
-    su.internalemailaddress,
-    su.title,
-    su.isdisabled,
-    su.islicensed,
-    su.accessmode
+    islicensed = 1
+    AND isdisabled = 0
+    AND accessmode = 0
 ORDER BY
-    MAX(a.createdon) DESC
+    fullname
