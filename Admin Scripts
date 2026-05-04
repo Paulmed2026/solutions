@@ -1,71 +1,46 @@
 # ============================================================
-# Export enabled Dynamics 365 / Dataverse users
-# who do NOT have an active environment license
-#
-# Criteria:
-#   isdisabled = false
-#   islicensed = false
-#
-# This script does NOT disable users.
-# It only exports the report.
+# Export ALL enabled Dynamics 365 / Dataverse users
+# with their environment license status
 # ============================================================
 
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
 
-# Install required modules if needed
 Install-Module Microsoft.Xrm.Tooling.CrmConnector.PowerShell -Scope CurrentUser -Force
 Install-Module Microsoft.Xrm.Data.PowerShell -Scope CurrentUser -Force
 
 Import-Module Microsoft.Xrm.Tooling.CrmConnector.PowerShell
 Import-Module Microsoft.Xrm.Data.PowerShell
 
-# ============================================================
+# =========================
 # CONFIGURATION
-# ============================================================
+# =========================
 
-# Replace with your Dynamics 365 / Dataverse environment URL
-# Example: https://yourorg.crm.dynamics.com
 $EnvironmentUrl = "https://YOURORG.crm.dynamics.com"
+$ExportPath = "C:\Temp\D365_All_Enabled_Users_With_License_Status.csv"
 
-# Export path
-$ExportPath = "C:\Temp\D365_Enabled_Users_Without_Active_License.csv"
-
-# Set to $true if you only want normal human users
-# accessmode = 0 means Read-Write user
-$OnlyNormalReadWriteUsers = $true
-
-# Create export folder if it does not exist
 $ExportFolder = Split-Path $ExportPath
 if (!(Test-Path $ExportFolder)) {
     New-Item -ItemType Directory -Path $ExportFolder -Force | Out-Null
 }
 
-# ============================================================
-# CONNECT TO DATAVERSE
-# ============================================================
+# =========================
+# CONNECT
+# =========================
 
-Write-Host "Connecting to Dataverse environment..." -ForegroundColor Cyan
+Write-Host "Connecting to Dataverse..." -ForegroundColor Cyan
 
 $CRMConn = Get-CrmConnection -InteractiveMode -ServerUrl $EnvironmentUrl
 
 if ($null -eq $CRMConn -or $CRMConn.IsReady -ne $true) {
-    Write-Host "Connection failed. Please check your environment URL and permissions." -ForegroundColor Red
+    Write-Host "Connection failed." -ForegroundColor Red
     return
 }
 
-Write-Host "Connected successfully to $EnvironmentUrl" -ForegroundColor Green
+Write-Host "Connected successfully." -ForegroundColor Green
 
-# Microsoft XRM Tooling PowerShell supports connecting to Dataverse/Dynamics environments using Get-CrmConnection. :contentReference[oaicite:1]{index=1}
-
-# ============================================================
-# BUILD FETCHXML QUERY
-# ============================================================
-
-$AccessModeFilter = ""
-
-if ($OnlyNormalReadWriteUsers -eq $true) {
-    $AccessModeFilter = "<condition attribute='accessmode' operator='eq' value='0' />"
-}
+# =========================
+# FETCH ALL ENABLED USERS
+# =========================
 
 $FetchXml = @"
 <fetch version='1.0' mapping='logical' distinct='false'>
@@ -83,70 +58,59 @@ $FetchXml = @"
     <order attribute='fullname' descending='false' />
     <filter type='and'>
       <condition attribute='isdisabled' operator='eq' value='0' />
-      <condition attribute='islicensed' operator='eq' value='0' />
-      $AccessModeFilter
     </filter>
   </entity>
 </fetch>
 "@
 
-# ============================================================
-# RETRIEVE USERS
-# ============================================================
-
-Write-Host "Retrieving enabled users without an active license..." -ForegroundColor Cyan
+Write-Host "Retrieving all enabled users..." -ForegroundColor Cyan
 
 $QueryResult = Get-CrmRecordsByFetch -conn $CRMConn -Fetch $FetchXml -AllRows
 $Users = $QueryResult.CrmRecords
 
 if ($null -eq $Users -or $Users.Count -eq 0) {
-    Write-Host "No enabled users without an active license were found." -ForegroundColor Green
+    Write-Host "No enabled users found in this environment." -ForegroundColor Yellow
     return
 }
 
-# ============================================================
-# FORMAT RESULTS
-# ============================================================
-
 $Results = foreach ($User in $Users) {
 
+    $LicensedValue = $User.islicensed
+
     [PSCustomObject]@{
-        SystemUserId       = $User.systemuserid
-        DisplayName        = $User.fullname
-        UserPrincipalName  = $User.domainname
-        Email              = $User.internalemailaddress
-        JobTitle           = $User.title
-        Department         = $User.department
-        BusinessUnit       = $User.businessunitid
-        IsDisabled         = $User.isdisabled
-        IsLicensed         = $User.islicensed
-        AccessMode         = $User.accessmode
-        LicenseStatus      = "No Active Environment License"
+        SystemUserId      = $User.systemuserid
+        DisplayName       = $User.fullname
+        UserPrincipalName = $User.domainname
+        Email             = $User.internalemailaddress
+        JobTitle          = $User.title
+        Department        = $User.department
+        BusinessUnit      = $User.businessunitid
+        IsDisabled        = $User.isdisabled
+        IsLicensed        = $User.islicensed
+        AccessMode        = $User.accessmode
+        LicenseStatus     = if ($User.islicensed -eq $true -or $User.islicensed -eq "True") {
+            "Licensed"
+        }
+        else {
+            "Not Licensed"
+        }
     }
 }
-
-# ============================================================
-# EXPORT TO CSV
-# ============================================================
 
 $Results |
     Sort-Object DisplayName |
     Export-Csv $ExportPath -NoTypeInformation -Encoding UTF8
 
-# Preview in PowerShell
+$Results |
+    Group-Object LicenseStatus |
+    Select-Object Name, Count |
+    Format-Table -AutoSize
+
 $Results |
     Sort-Object DisplayName |
-    Format-Table `
-        DisplayName,
-        UserPrincipalName,
-        Email,
-        IsDisabled,
-        IsLicensed,
-        AccessMode,
-        LicenseStatus `
-        -AutoSize
+    Format-Table DisplayName, UserPrincipalName, Email, IsDisabled, IsLicensed, AccessMode, LicenseStatus -AutoSize
 
 Write-Host ""
 Write-Host "Export completed successfully." -ForegroundColor Green
-Write-Host "Total users found: $($Results.Count)" -ForegroundColor Green
+Write-Host "Total enabled users found: $($Results.Count)" -ForegroundColor Green
 Write-Host "File exported to: $ExportPath" -ForegroundColor Green
