@@ -3,6 +3,7 @@ SELECT
     su.domainname AS UserPrincipalName,
     su.internalemailaddress AS Email,
     su.title AS JobTitle,
+   
     su.isdisabled AS IsDisabled,
     su.islicensed AS IsLicensed,
     su.accessmode AS AccessMode,
@@ -13,8 +14,10 @@ LEFT JOIN
     audit a
     ON a.objectid = su.systemuserid
     AND a.operation = 4
+    AND a.createdon >= '2025-11-01'
 WHERE
     su.islicensed = 1
+    AND su.isdisabled = 0
 GROUP BY
     su.fullname,
     su.domainname,
