@@ -1,15 +1,254 @@
-SELECT
-    fullname AS DisplayName,
-    domainname AS UserPrincipalName,
-    internalemailaddress AS Email,
-    isdisabled AS IsDisabled,
-    islicensed AS IsLicensed,
-    accessmode AS AccessMode
-FROM
-    systemuser
-WHERE
-    isdisabled = 0
-    AND islicensed = 0
-    AND accessmode = 0
-ORDER BY
-    fullname
+CRM GOVERNANCE BOARD MODEL
+Purpose:
+Ensure all CRM changes are aligned, controlled, prioritized, and scalable
+ 1. GOVERNANCE OBJECTIVES
+•	Align CRM with business strategy 
+•	Control scope creep and random requests 
+•	Improve quality and consistency 
+•	Reduce risk (technical + operational) 
+•	Prioritize high-value initiatives 
+ In simple terms:
+“Nothing enters CRM without structure, review, and alignment.”
+ 2. GOVERNANCE BOARD STRUCTURE
+Core Members (Mandatory)
+Role	Responsibility
+CRM Lead (You)	Own governance, technical authority
+Product Owner / Business Lead	Defines priorities
+IT / Architecture Lead	Ensures technical alignment
+QA / Testing Lead	Quality control
+Data/Integration Lead	Data integrity & integrations
+
+Optional Members (as needed)
+•	Security/Compliance (for regulated environments) 
+•	Finance (for cost-impact decisions) 
+•	Sales/Operations SMEs 
+ 3. GOVERNANCE OPERATING MODEL
+Weekly Governance Meeting (30–60 min)
+Agenda:
+1.	New Requests Intake Review 
+2.	Priority Alignment 
+3.	Technical Feasibility Review 
+4.	Risk & Impact Assessment 
+5.	Approval / Rejection Decisions 
+Monthly Strategic Review
+•	Roadmap alignment 
+•	Performance metrics 
+•	Tech debt review 
+•	Major initiative planning 
+ 4. INTAKE PROCESS (CRITICAL)
+Rule:
+❌ No direct dev requests
+✅ All requests go through intake
+Intake Form Must Include:
+•	Business objective 
+•	Expected outcome 
+•	Priority level 
+•	Impacted users 
+•	Deadline (if any) 
+Request Flow:
+1.	Business submits request 
+2.	CRM Lead reviews (initial triage) 
+3.	Governance Board evaluates 
+4.	Approved → backlog 
+5.	Rejected → documented reason 
+ 5. PRIORITIZATION FRAMEWORK
+Use a simple scoring model:
+Criteria	Score
+Business Impact	High / Medium / Low
+Revenue Impact	High / Medium / Low
+Effort	High / Medium / Low
+Risk	High / Medium / Low
+
+Decision Logic:
+•	High Impact + Low Effort → PRIORITY 
+•	Low Impact + High Effort → DEFER 
+ 6. CHANGE CLASSIFICATION MODEL
+Categorize all requests:
+Type	Examples
+Enhancement	New fields, UI improvements
+Bug Fix	System issues
+Integration	API, data sync
+Compliance	Security, audit changes
+Tech Debt	Cleanup, refactoring
+
+ 7. APPROVAL TIERS
+Tier 1 (Fast Track)
+•	Small changes 
+•	No architectural impact
+ Approved by CRM Lead 
+
+Tier 2 (Standard)
+•	Medium complexity
+ Governance Board approval 
+Tier 3 (Strategic)
+•	Large initiatives / integrations
+ Executive approval required 
+ 8. ARCHITECTURE REVIEW GATE
+Before development starts:
+Must validate:
+•	Fits architecture framework 
+•	No duplication of logic 
+•	Proper tool usage (Plugin vs Flow vs JS) 
+9. METRICS GOVERNANCE TRACKS
+Track these monthly:
+•	Number of requests submitted 
+•	Approval vs rejection rate 
+•	Delivery time 
+•	Production issues 
+•	Tech debt backlog size 
+
+Why Governance 
+A CRM Governance Board isn’t just “process”—it works because it fixes the exact failure points most Dynamics 365 environments run into: chaos, duplication, slow delivery, and misalignment with the business.
+Here’s why it actually works in practice 👇
+
+🎯 1. It Creates a Single Source of Truth for Decisions
+Without governance:
+•	Requests come from emails, Teams, hallway conversations 
+•	Developers pick up work randomly 
+•	Priorities constantly shift 
+With governance:
+•	Every request goes through one structured intake 
+•	Every decision is visible and documented 
+👉 Result:
+No confusion about what is being built or why
+
+⚖️ 2. It Forces Business–IT Alignment
+Most CRM failures happen because:
+•	Business asks for features without understanding impact 
+•	IT builds solutions without understanding business value 
+The board forces both sides to sit together and answer:
+•	What problem are we solving? 
+•	What’s the business impact? 
+•	Is this the best way to solve it? 
+👉 Result:
+You stop building “nice-to-have” features and focus on real value
+
+🚦 3. It Prioritizes the Right Work (Not the Loudest Voice)
+Without governance:
+•	The loudest stakeholder wins 
+•	Urgent ≠ Important 
+With governance:
+•	Requests are scored objectively (impact, effort, risk) 
+•	Decisions are data-driven, not emotional 
+👉 Result:
+High-impact work gets delivered first
+
+🧱 4. It Prevents System Chaos & Technical Debt
+This is huge in Dynamics 365.
+Without governance:
+•	Duplicate fields, tables, and logic 
+•	Multiple flows doing the same thing 
+•	Plugins + flows + JS overlapping 
+With governance:
+•	Every change goes through architecture review 
+•	Standards are enforced before development starts 
+👉 Result:
+Clean, scalable system (not a patchwork CRM)
+
+⚡ 5. It Speeds Up Delivery (Yes, really)
+It may feel like governance slows things down—but it does the opposite.
+Without governance:
+•	Rework 
+•	Miscommunication 
+•	Broken releases 
+With governance:
+•	Clear requirements upfront 
+•	Fewer surprises 
+•	Less rework 
+👉 Result:
+Faster, smoother delivery
+
+🧪 6. It Improves Quality & Reduces Production Issues
+Because governance enforces:
+•	Testing 
+•	UAT sign-off 
+•	Release validation 
+👉 Result:
+•	Fewer bugs 
+•	More stable releases 
+•	Higher user trust 
+
+🔐 7. It Reduces Risk (Technical + Business)
+Especially important in regulated environments.
+Without governance:
+•	Uncontrolled changes 
+•	Security gaps 
+•	Data integrity issues 
+With governance:
+•	Controlled approvals 
+•	Security review when needed 
+•	Data rules enforced 
+👉 Result:
+•	Lower compliance risk 
+•	Better audit readiness 
+
+📊 8. It Gives Leadership Visibility & Control
+Leadership doesn’t care about plugins or flows—they care about:
+•	ROI 
+•	Risk 
+•	Delivery speed 
+Governance provides:
+•	Clear backlog 
+•	Prioritized roadmap 
+•	Metrics (delivery time, defects, value) 
+👉 Result:
+Leadership sees CRM as a strategic asset, not a black box
+
+👥 9. It Creates Accountability
+Without governance:
+•	“Who built this?” → nobody knows 
+•	“Why was this done?” → unclear 
+With governance:
+•	Every request has: 
+o	Owner 
+o	Approval 
+o	Documentation 
+👉 Result:
+Clear ownership across the system
+
+🧠 10. It Transforms CRM from Tool → Platform
+This is the real goal.
+Without governance:
+•	CRM = ticket system 
+•	Constant firefighting 
+With governance:
+•	CRM = strategic platform 
+•	Planned growth 
+•	Scalable architecture 
+👉 Result:
+You move from reactive support → strategic leadership
+
+🔥 The Bottom Line
+A CRM Governance Board works because it enforces:
+1. Clarity
+Everyone knows what’s being built and why
+2. Control
+No random or risky changes
+3. Consistency
+Standards are followed every time
+4. Alignment
+Business and IT move together
+5. Accountability
+Decisions are owned and tracked
+
+
+Hi [Boss’s Name],
+As I step into managing the CRM team, I’ve been evaluating how we can improve delivery, alignment with business priorities, and overall system stability.
+One key area I’d like to introduce is a lightweight CRM Governance Board model to better structure how requests are reviewed, prioritized, and delivered.
+Today, requests can come from multiple directions, which can lead to shifting priorities, duplicated efforts, or solutions that don’t fully align with broader business goals. The governance model is designed to address this by creating a clear and consistent process.
+At a high level, this would include:
+•	A centralized intake process for all CRM requests
+•	A weekly review to evaluate, prioritize, and approve work based on business impact
+•	A simple scoring framework to ensure we focus on high-value initiatives
+•	A technical and architecture check before development begins to maintain system quality and scalability
+•	Clear visibility into what is being worked on and why
+The goal is not to add overhead, but to:
+•	Improve focus on the highest-impact work
+•	Reduce rework and production issues
+•	Ensure alignment between business needs and technical delivery
+•	Provide better visibility and predictability for stakeholders
+This approach will help us move from a reactive model to a more structured and strategic delivery model, while still remaining agile.
+I’d like to start with a lightweight version of this and iterate based on feedback. Happy to walk through the proposed structure and get your thoughts before rolling it out.
+Thanks,
+Paul
+
