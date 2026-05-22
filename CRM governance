@@ -1,518 +1,90 @@
-# Metagenics CRM Governance Program
-
-## Governance Kickoff Plan & Execution Document
-
-Prepared By: Paul Aneng
-Role: CRM Lead
-Platform: Microsoft Dynamics 365 & Microsoft Power Platform
-Date: May 2026
-
----
-
-# 1. Executive Summary
-
-Metagenics is entering a critical phase in the evolution of its CRM and Power Platform ecosystem. As the platform expands across Sales, Marketing, Operations, Reporting, Integrations, and AI-driven initiatives, a formal governance structure is required to ensure scalability, alignment, security, operational efficiency, and strategic execution.
-
-This document establishes the foundational kickoff plan for the CRM Governance Program.
-
-The CRM Governance Program is designed to:
-
-* Align CRM strategy with business goals
-* Improve delivery efficiency
-* Reduce technical debt
-* Standardize development and deployment practices
-* Improve user adoption and platform stability
-* Strengthen data quality and security
-* Enable scalable innovation across the organization
-
-The governance program is intended to support business growth while maintaining a secure, scalable, and sustainable CRM ecosystem.
-
----
-
-# 2. Governance Mission Statement
-
-The CRM Governance Program exists to ensure the Dynamics 365 and Power Platform ecosystem remains scalable, secure, business-aligned, operationally efficient, and strategically valuable across all CRM initiatives.
-
----
-
-# 3. Governance Objectives
-
-## Strategic Objectives
-
-* Align CRM investments with business priorities
-* Improve executive visibility into CRM initiatives
-* Enable long-term platform scalability
-* Support AI-assisted selling and modern CRM capabilities
-* Improve cross-functional collaboration
-
-## Operational Objectives
-
-* Standardize intake and prioritization
-* Improve release management and deployment discipline
-* Reduce production incidents
-* Improve support and operational visibility
-* Improve delivery predictability
-
-## Technical Objectives
-
-* Establish enterprise ALM discipline
-* Reduce unmanaged customizations
-* Standardize integrations and development
-* Improve solution architecture governance
-* Improve environment management
-
-## Data Objectives
-
-* Improve data quality and ownership
-* Reduce duplicate records
-* Improve reporting reliability
-* Improve data governance accountability
-
----
-
-# 4. Governance Structure
-
-## 4.1 Governance Layers
-
-| Governance Layer       | Purpose                                                               |
-| ---------------------- | --------------------------------------------------------------------- |
-| Strategic Governance   | Executive alignment, roadmap management, funding, business priorities |
-| Operational Governance | Intake management, prioritization, delivery management                |
-| Technical Governance   | Architecture standards, ALM, integrations, security                   |
-| Data Governance        | Data quality, reporting standards, ownership                          |
-
----
-
-# 5. Governance Board Structure
-
-## Initial Governance Board Members
-
-| Role                  | Responsibility                              |
-| --------------------- | ------------------------------------------- |
-| CRM Lead              | Governance leadership and platform strategy |
-| Sales Leadership      | Sales priorities and user alignment         |
-| Marketing Leadership  | Campaign and engagement alignment           |
-| Operations Leadership | Operational process alignment               |
-| IT Operations         | Infrastructure and security governance      |
-| Reporting/Data Lead   | Data governance and KPI visibility          |
-| PM/Scrum Leadership   | Delivery coordination and planning          |
-
----
-
-# 6. Governance Operating Model
-
-## Weekly Operational Governance Meeting
-
-### Frequency
-
-Weekly
-
-### Duration
-
-30 Minutes
-
-### Purpose
-
-Operational execution and prioritization.
-
-### Agenda
-
-* Review new CRM requests
-* Review sprint priorities
-* Review production issues
-* Review deployments
-* Review blockers and risks
-* Review support escalations
-
----
-
-## Monthly Strategic Governance Meeting
-
-### Frequency
-
-Monthly
-
-### Duration
-
-60 Minutes
-
-### Purpose
-
-Strategic oversight and roadmap alignment.
-
-### Agenda
-
-* CRM roadmap review
-* Executive initiative review
-* KPI review
-* Budget and funding review
-* Adoption and platform health review
-* Strategic risk review
-
----
-
-# 7. CRM Intake & Prioritization Framework
-
-## Intake Requirements
-
-All CRM enhancement requests must include:
-
-* Business problem statement
-* Requested enhancement
-* Business owner
-* Business justification
-* User impact
-* Revenue impact
-* Compliance impact
-* Requested timeline
-* Systems impacted
-* Supporting documentation
-
----
-
-## Prioritization Model
-
-| Criteria             | Weight |
-| -------------------- | ------ |
-| Revenue Impact       | 30%    |
-| User Impact          | 25%    |
-| Compliance Risk      | 20%    |
-| Strategic Alignment  | 15%    |
-| Technical Complexity | 10%    |
-
----
-
-# 8. Environment Governance Strategy
-
-## Environment Structure
-
-| Environment | Purpose                              |
-| ----------- | ------------------------------------ |
-| Development | Active development and configuration |
-| Test/UAT    | Validation and testing               |
-| Production  | Controlled business operations       |
-
----
-
-## Environment Governance Rules
-
-* No unmanaged customizations in Production
-* All deployments must occur through solutions
-* All flows must be solution-aware
-* Environment variables required for configurable settings
-* Connection references required for integrations
-* Source control mandatory for enterprise solutions
-* Production access restricted to authorized personnel
-
----
-
-# 9. ALM Governance Standards
-
-## Application Lifecycle Management Standards
-
-### Source Control
-
-* All enterprise solutions stored in source control
-* Branching strategy required
-* Pull request reviews required
-
-### Deployment Standards
-
-* All deployments must pass UAT approval
-* Rollback strategy required for production releases
-* Solution versioning standards required
-* Release notes mandatory
-
-### Solution Standards
-
-* Managed solutions for Production
-* Unmanaged solutions for Development only
-* Solution segmentation encouraged
-* Publisher and naming standards enforced
-
----
-
-# 10. Development Standards
-
-## Naming Standards
-
-### Examples
-
-| Component Type | Naming Example        |
-| -------------- | --------------------- |
-| Solution       | META_SalesCore        |
-| Flow           | META_AccountSync_Flow |
-| Plugin         | META.Account.Plugin   |
-| JavaScript     | meta_accountForm.js   |
-| Table          | meta_accountterritory |
-
----
-
-## Plugin Standards
-
-* Tracing required
-* Structured exception handling required
-* Async processing preferred when applicable
-* Secure/unsecure configuration usage encouraged
-* Plugin step documentation required
-
----
-
-## Power Automate Standards
-
-* Service account usage for enterprise flows
-* Retry policies required for integrations
-* Child flows encouraged for reusable logic
-* Naming standards enforced
-* Ownership documentation required
-
----
-
-## JavaScript Standards
-
-* Namespace pattern required
-* Async patterns encouraged
-* Form event documentation required
-* Minimize unsupported DOM manipulation
-
----
-
-# 11. Security & Access Governance
-
-## Security Governance Objectives
-
-* Protect business data
-* Minimize excessive access
-* Improve auditability
-* Standardize security role management
-
----
-
-## Security Standards
-
-* Least privilege access model
-* Role-based access control
-* Team-based security encouraged
-* Administrative access restricted
-* Quarterly access reviews required
-
----
-
-# 12. Data Governance
-
-## Data Governance Objectives
-
-* Improve data quality
-* Reduce duplicates
-* Improve reporting reliability
-* Establish data ownership accountability
-
----
-
-## Data Governance Standards
-
-* Duplicate management processes required
-* Required field standards enforced
-* Integration validation standards enforced
-* Master data ownership assigned
-
----
-
-# 13. Governance KPIs
-
-## Delivery KPIs
-
-* Backlog size
-* Average request completion time
-* Sprint completion percentage
-* Deployment success rate
-
----
-
-## Platform Health KPIs
-
-* Failed flows
-* Plugin failures
-* Integration failures
-* Environment capacity usage
-* Production incident count
-
----
-
-## Adoption KPIs
-
-* Active CRM users
-* Sales activity completion rates
-* Dashboard usage metrics
-* Mobile adoption metrics
-
----
-
-## Data Quality KPIs
-
-* Duplicate account count
-* Missing required data
-* Integration mismatch count
-* Invalid address count
-
----
-
-# 14. CRM Roadmap Governance
-
-## Strategic Roadmap Pillars
-
-| Pillar              | Initiative Examples            |
-| ------------------- | ------------------------------ |
-| Sales Excellence    | AI-assisted selling            |
-| Customer Engagement | Account 360 enhancements       |
-| Data Modernization  | Warehouse integrations         |
-| Automation          | Workflow modernization         |
-| Mobility            | Territory routing optimization |
-| Analytics           | Executive dashboards           |
-| Governance          | ALM and standards maturation   |
-
----
-
-# 15. CRM Governance Communication Plan
-
-## Communication Objectives
-
-* Improve transparency
-* Improve stakeholder alignment
-* Improve roadmap visibility
-* Improve organizational adoption
-
----
-
-## Communication Channels
-
-| Channel                      | Purpose                         |
-| ---------------------------- | ------------------------------- |
-| Governance Meetings          | Decision making and oversight   |
-| SharePoint Governance Portal | Standards and documentation     |
-| Teams Channel                | Collaboration and communication |
-| KPI Dashboards               | Executive visibility            |
-| Roadmap Reviews              | Strategic alignment             |
-
----
-
-# 16. 30-60-90 Day Governance Kickoff Plan
-
-## First 30 Days
-
-### Objectives
-
-* Establish governance structure
-* Launch governance meetings
-* Publish governance charter
-* Define ALM standards
-* Launch intake process
-
-### Deliverables
-
-* Governance Charter
-* Governance Board Structure
-* Intake Process
-* Initial Roadmap
-* ALM Standards
-* Meeting Cadence
-
----
-
-## Days 31-60
-
-### Objectives
-
-* Operationalize governance
-* Improve delivery visibility
-* Establish KPI reporting
-* Begin architecture reviews
-
-### Deliverables
-
-* KPI Dashboard
-* Architecture Review Process
-* Development Standards Guide
-* Security Governance Standards
-* Initial Reporting Metrics
-
----
-
-## Days 61-90
-
-### Objectives
-
-* Mature governance operations
-* Improve roadmap execution
-* Expand governance visibility
-* Optimize operational processes
-
-### Deliverables
-
-* Governance Performance Review
-* Roadmap Health Assessment
-* Platform Health Assessment
-* Adoption Metrics Report
-* Governance Improvement Recommendations
-
----
-
-# 17. Immediate Action Plan
-
-## Week 1
-
-* Finalize governance charter
-* Identify governance board members
-* Schedule recurring governance meetings
-* Define governance communication strategy
-
----
-
-## Week 2
-
-* Launch intake process
-* Define prioritization scoring
-* Define ALM standards
-* Publish governance overview
-
----
-
-## Week 3
-
-* Establish KPI framework
-* Define deployment governance
-* Define architecture review standards
-* Define support escalation model
-
----
-
-## Week 4
-
-* Launch governance operations
-* Publish roadmap visibility dashboards
-* Begin governance reporting
-* Conduct first strategic governance review
-
----
-
-# 18. Success Criteria
-
-The CRM Governance Program will be considered successful when:
-
-* CRM priorities are aligned with business strategy
-* Delivery becomes predictable and measurable
-* Production incidents are reduced
-* User adoption improves
-* CRM scalability improves
-* Technical debt is reduced
-* Governance becomes embedded into operational processes
-
----
-
-# 19. Conclusion
-
-The CRM Governance Program establishes the operational, technical, and strategic framework required to scale the Metagenics CRM ecosystem successfully.
-
-By implementing governance early and aligning business and technology stakeholders, Metagenics will position the CRM platform to support long-term growth, operational efficiency, innovation, and customer engagement excellence.
-
-The governance model is intended to evolve progressively as the organization and platform maturity increase.
+{
+  "type": "OpenApiConnectionWebhook",
+  "inputs": {
+    "parameters": {
+      "subscriptionRequest/message": 3,
+      "subscriptionRequest/entityname": "meta_accountmanagement",
+      "subscriptionRequest/scope": 4,
+      "subscriptionRequest/filteringattributes": "meta_copymslform"
+    },
+    "host": {
+      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+      "connection": "shared_commondataserviceforapps-1",
+      "operationId": "SubscribeWebhookTrigger"
+    }
+  },
+  "metadata": {
+    "operationMetadataId": "543d6960-c32b-40ef-af29-98cbeaa75086"
+  }
+}
+
+{
+  "type": "If",
+  "expression": {
+    "equals": [
+      "@triggerOutputs()?['body/meta_copymslform']",
+      true
+    ]
+  },
+  "actions": {
+    "List_rows": {
+      "type": "OpenApiConnection",
+      "inputs": {
+        "parameters": {
+          "entityName": "meta_mslforms",
+          "fetchXml": "<fetch version=\"1.0\" output-format=\"xml-platform\" mapping=\"logical\" distinct=\"false\">\n  <entity name=\"meta_mslform\">\n    <attribute name=\"meta_mslformid\" />\n    <attribute name=\"createdon\" />\n    <attribute name=\"meta_product\" />\n    <attribute name=\"meta_mslstatus\" />\n    <attribute name=\"meta_notes\" />\n    <attribute name=\"statuscode\" />\n    <attribute name=\"statecode\" />\n    <attribute name=\"overriddencreatedon\" />\n    <attribute name=\"owningbusinessunit\" />\n    <attribute name=\"ownerid\" />\n    <attribute name=\"meta_name\" />\n    <attribute name=\"meta_month\" />\n    <attribute name=\"modifiedon\" />\n    <attribute name=\"modifiedonbehalfby\" />\n    <attribute name=\"modifiedby\" />\n    <attribute name=\"createdonbehalfby\" />\n    <attribute name=\"createdby\" />\n    <attribute name=\"meta_compliancestatus\" />\n    <attribute name=\"meta_accountmanagement\" />\n    <filter type=\"and\">\n      <condition attribute=\"meta_accountmanagement\" operator=\"eq\" uiname=\"ZUMBADOR HOLDINGS P/L BODY 4 LIFE AUST (PRACTITIONER) / 000000078590 / \" uitype=\"meta_accountmanagement\" value=\"{@{triggerOutputs()?['body/meta_accountmanagementid']}}\" />\n      <condition attribute=\"createdon\" operator=\"last-month\" />\n    </filter>\n  </entity>\n</fetch>"
+        },
+        "host": {
+          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+          "connection": "shared_commondataserviceforapps-1",
+          "operationId": "ListRecords"
+        }
+      },
+      "metadata": {
+        "operationMetadataId": "aa08e7dc-b6d1-45ed-9836-309701ed5038"
+      }
+    },
+    "Apply_to_each": {
+      "type": "Foreach",
+      "foreach": "@outputs('List_rows')?['body/value']",
+      "actions": {
+        "Add_a_new_row": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "entityName": "meta_mslforms",
+              "item/meta_AccountManagement@odata.bind": "meta_accountmanagements(@{items('Apply_to_each')?['_meta_accountmanagement_value']})",
+              "item/meta_compliancestatus": "@items('Apply_to_each')?['meta_compliancestatus']",
+              "item/meta_month": 4,
+              "item/meta_mslstatus": "@items('Apply_to_each')?['meta_mslstatus']",
+              "item/meta_Product@odata.bind": "products(@{items('Apply_to_each')?['_meta_product_value']})"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+              "connection": "shared_commondataserviceforapps-1",
+              "operationId": "CreateRecord"
+            }
+          },
+          "metadata": {
+            "operationMetadataId": "5ef62399-883f-41c1-af5b-002ae8f8ed60"
+          }
+        }
+      },
+      "runAfter": {
+        "List_rows": [
+          "Succeeded"
+        ]
+      },
+      "metadata": {
+        "operationMetadataId": "d66d6a43-7baa-42e0-b4bf-546158b2b3cf"
+      }
+    }
+  },
+  "else": {
+    "actions": {}
+  },
+  "runAfter": {},
+  "metadata": {
+    "operationMetadataId": "ff665a36-7c2f-459b-9f86-87a8567c64c0"
+  }
+}
