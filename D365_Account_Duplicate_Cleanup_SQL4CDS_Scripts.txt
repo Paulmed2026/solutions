@@ -1,0 +1,2033 @@
+Dynamics 365 / Dataverse Account Duplicate Cleanup Scripts
+==========================================================
+
+Purpose:
+--------
+These scripts help clean duplicate Account records in Dynamics 365 / Dataverse.
+
+The dying Accounts are identified by a custom Yes/No flag:
+    meta_tobecleaned = 1
+
+The master Account is identified by matching:
+    1. ABL Number
+    2. OOB Account Address fields
+
+Custom field assumptions:
+-------------------------
+    meta_tobecleaned  -- Yes/No field on Account. 1 = dying / to be cleaned.
+    meta_ablnumber    -- ABL number field on Account.
+
+OOB address fields used:
+------------------------
+    address1_line1
+    address1_line2
+    address1_line3
+    address1_city
+    address1_stateorprovince
+    address1_postalcode
+    address1_country
+
+Important Notes:
+----------------
+1. Do NOT run these scripts directly against the Dataverse SQL/TDS endpoint from SSMS.
+   The Dataverse SQL/TDS endpoint is read-only.
+
+2. Use SQL 4 CDS in XrmToolBox or convert this logic into a C# console app using Dataverse SDK/Web API.
+
+3. Test first in DEV or UAT.
+
+4. Export/back up records before running in production.
+
+5. Run preview scripts first.
+
+6. Only records with exactly one matching master Account should be moved.
+
+7. Records with multiple possible master matches should be reviewed manually.
+
+8. Records with no master match should not be moved.
+
+9. The scripts below are written for Account-to-Account cleanup only.
+
+10. Since SQL CTEs only apply to the one statement immediately following them, each update script repeats the same AccountMap logic.
+
+
+================================================================================
+SCRIPT 1: Preview Dying Account to Master Account Mapping
+================================================================================
+
+Purpose:
+--------
+Shows all dying Accounts where meta_tobecleaned = 1 and their possible master Accounts,
+matched using ABL number and OOB address fields.
+
+Use this script first to review the proposed Account mapping.
+
+SQL:
+----
+
+WITH NormalizedAccounts AS
+(
+    SELECT
+        accountid,
+        name,
+        statecode,
+        meta_tobecleaned,
+        UPPER(LTRIM(RTRIM(ISNULL(meta_ablnumber, '')))) AS ABLKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line1, '')))) AS Line1Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line2, '')))) AS Line2Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line3, '')))) AS Line3Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_city, '')))) AS CityKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_stateorprovince, '')))) AS StateKey,
+        UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(address1_postalcode, ''))), ' ', ''), '-', '')) AS PostalKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_country, '')))) AS CountryKey
+    FROM account
+),
+AccountMapRaw AS
+(
+    SELECT
+        dying.accountid AS DyingAccountId,
+        dying.name AS DyingAccountName,
+        master.accountid AS MasterAccountId,
+        master.name AS MasterAccountName,
+        dying.ABLKey AS ABLNumber,
+        dying.Line1Key,
+        dying.Line2Key,
+        dying.Line3Key,
+        dying.CityKey,
+        dying.StateKey,
+        dying.PostalKey,
+        dying.CountryKey
+    FROM NormalizedAccounts dying
+    INNER JOIN NormalizedAccounts master
+        ON dying.ABLKey = master.ABLKey
+        AND dying.Line1Key = master.Line1Key
+        AND dying.Line2Key = master.Line2Key
+        AND dying.Line3Key = master.Line3Key
+        AND dying.CityKey = master.CityKey
+        AND dying.StateKey = master.StateKey
+        AND dying.PostalKey = master.PostalKey
+        AND dying.CountryKey = master.CountryKey
+        AND dying.accountid <> master.accountid
+    WHERE
+        dying.meta_tobecleaned = 1
+        AND ISNULL(master.meta_tobecleaned, 0) = 0
+        AND dying.statecode = 0
+        AND master.statecode = 0
+        AND dying.ABLKey <> ''
+        AND dying.Line1Key <> ''
+        AND dying.CityKey <> ''
+        AND dying.StateKey <> ''
+        AND dying.PostalKey <> ''
+)
+
+SELECT *
+FROM AccountMapRaw
+ORDER BY DyingAccountName;
+
+
+================================================================================
+SCRIPT 2: Find Dying Accounts with Multiple Possible Masters
+================================================================================
+
+Purpose:
+--------
+Identifies dying Accounts that match more than one possible master Account.
+
+Do NOT move child records for these Accounts until they are manually reviewed.
+
+SQL:
+----
+
+WITH NormalizedAccounts AS
+(
+    SELECT
+        accountid,
+        name,
+        statecode,
+        meta_tobecleaned,
+        UPPER(LTRIM(RTRIM(ISNULL(meta_ablnumber, '')))) AS ABLKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line1, '')))) AS Line1Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line2, '')))) AS Line2Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line3, '')))) AS Line3Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_city, '')))) AS CityKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_stateorprovince, '')))) AS StateKey,
+        UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(address1_postalcode, ''))), ' ', ''), '-', '')) AS PostalKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_country, '')))) AS CountryKey
+    FROM account
+),
+AccountMapRaw AS
+(
+    SELECT
+        dying.accountid AS DyingAccountId,
+        dying.name AS DyingAccountName,
+        master.accountid AS MasterAccountId,
+        master.name AS MasterAccountName,
+        dying.ABLKey AS ABLNumber,
+        dying.Line1Key,
+        dying.CityKey,
+        dying.StateKey,
+        dying.PostalKey
+    FROM NormalizedAccounts dying
+    INNER JOIN NormalizedAccounts master
+        ON dying.ABLKey = master.ABLKey
+        AND dying.Line1Key = master.Line1Key
+        AND dying.Line2Key = master.Line2Key
+        AND dying.Line3Key = master.Line3Key
+        AND dying.CityKey = master.CityKey
+        AND dying.StateKey = master.StateKey
+        AND dying.PostalKey = master.PostalKey
+        AND dying.CountryKey = master.CountryKey
+        AND dying.accountid <> master.accountid
+    WHERE
+        dying.meta_tobecleaned = 1
+        AND ISNULL(master.meta_tobecleaned, 0) = 0
+        AND dying.statecode = 0
+        AND master.statecode = 0
+        AND dying.ABLKey <> ''
+        AND dying.Line1Key <> ''
+        AND dying.CityKey <> ''
+        AND dying.StateKey <> ''
+        AND dying.PostalKey <> ''
+)
+
+SELECT
+    DyingAccountId,
+    DyingAccountName,
+    ABLNumber,
+    Line1Key,
+    CityKey,
+    StateKey,
+    PostalKey,
+    COUNT(*) AS PossibleMasterCount
+FROM AccountMapRaw
+GROUP BY
+    DyingAccountId,
+    DyingAccountName,
+    ABLNumber,
+    Line1Key,
+    CityKey,
+    StateKey,
+    PostalKey
+HAVING COUNT(*) > 1
+ORDER BY DyingAccountName;
+
+
+================================================================================
+SCRIPT 3: Find Dying Accounts with No Master Match
+================================================================================
+
+Purpose:
+--------
+Finds Accounts marked as meta_tobecleaned = 1 that do not have a matching master Account.
+
+These records should not be moved until the data is corrected or a master is manually selected.
+
+SQL:
+----
+
+WITH NormalizedAccounts AS
+(
+    SELECT
+        accountid,
+        name,
+        statecode,
+        meta_tobecleaned,
+        UPPER(LTRIM(RTRIM(ISNULL(meta_ablnumber, '')))) AS ABLKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line1, '')))) AS Line1Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line2, '')))) AS Line2Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line3, '')))) AS Line3Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_city, '')))) AS CityKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_stateorprovince, '')))) AS StateKey,
+        UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(address1_postalcode, ''))), ' ', ''), '-', '')) AS PostalKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_country, '')))) AS CountryKey
+    FROM account
+),
+MatchedDyingAccounts AS
+(
+    SELECT DISTINCT
+        dying.accountid AS DyingAccountId
+    FROM NormalizedAccounts dying
+    INNER JOIN NormalizedAccounts master
+        ON dying.ABLKey = master.ABLKey
+        AND dying.Line1Key = master.Line1Key
+        AND dying.Line2Key = master.Line2Key
+        AND dying.Line3Key = master.Line3Key
+        AND dying.CityKey = master.CityKey
+        AND dying.StateKey = master.StateKey
+        AND dying.PostalKey = master.PostalKey
+        AND dying.CountryKey = master.CountryKey
+        AND dying.accountid <> master.accountid
+    WHERE
+        dying.meta_tobecleaned = 1
+        AND ISNULL(master.meta_tobecleaned, 0) = 0
+        AND dying.statecode = 0
+        AND master.statecode = 0
+        AND dying.ABLKey <> ''
+        AND dying.Line1Key <> ''
+        AND dying.CityKey <> ''
+        AND dying.StateKey <> ''
+        AND dying.PostalKey <> ''
+)
+
+SELECT
+    a.accountid,
+    a.name,
+    a.meta_ablnumber,
+    a.address1_line1,
+    a.address1_line2,
+    a.address1_line3,
+    a.address1_city,
+    a.address1_stateorprovince,
+    a.address1_postalcode,
+    a.address1_country
+FROM account a
+LEFT JOIN MatchedDyingAccounts m
+    ON a.accountid = m.DyingAccountId
+WHERE
+    a.meta_tobecleaned = 1
+    AND a.statecode = 0
+    AND m.DyingAccountId IS NULL
+ORDER BY a.name;
+
+
+================================================================================
+SCRIPT 4: Preview Safe One-to-One Account Mapping
+================================================================================
+
+Purpose:
+--------
+Returns only dying Accounts that have exactly one matching master Account.
+
+This is the safe mapping that should be used for reparenting child records.
+
+SQL:
+----
+
+WITH NormalizedAccounts AS
+(
+    SELECT
+        accountid,
+        name,
+        statecode,
+        meta_tobecleaned,
+        UPPER(LTRIM(RTRIM(ISNULL(meta_ablnumber, '')))) AS ABLKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line1, '')))) AS Line1Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line2, '')))) AS Line2Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line3, '')))) AS Line3Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_city, '')))) AS CityKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_stateorprovince, '')))) AS StateKey,
+        UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(address1_postalcode, ''))), ' ', ''), '-', '')) AS PostalKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_country, '')))) AS CountryKey
+    FROM account
+),
+AccountMapRaw AS
+(
+    SELECT
+        dying.accountid AS DyingAccountId,
+        dying.name AS DyingAccountName,
+        master.accountid AS MasterAccountId,
+        master.name AS MasterAccountName,
+        dying.ABLKey AS ABLNumber,
+        dying.Line1Key,
+        dying.Line2Key,
+        dying.Line3Key,
+        dying.CityKey,
+        dying.StateKey,
+        dying.PostalKey,
+        dying.CountryKey
+    FROM NormalizedAccounts dying
+    INNER JOIN NormalizedAccounts master
+        ON dying.ABLKey = master.ABLKey
+        AND dying.Line1Key = master.Line1Key
+        AND dying.Line2Key = master.Line2Key
+        AND dying.Line3Key = master.Line3Key
+        AND dying.CityKey = master.CityKey
+        AND dying.StateKey = master.StateKey
+        AND dying.PostalKey = master.PostalKey
+        AND dying.CountryKey = master.CountryKey
+        AND dying.accountid <> master.accountid
+    WHERE
+        dying.meta_tobecleaned = 1
+        AND ISNULL(master.meta_tobecleaned, 0) = 0
+        AND dying.statecode = 0
+        AND master.statecode = 0
+        AND dying.ABLKey <> ''
+        AND dying.Line1Key <> ''
+        AND dying.CityKey <> ''
+        AND dying.StateKey <> ''
+        AND dying.PostalKey <> ''
+),
+ValidDyingAccounts AS
+(
+    SELECT DyingAccountId
+    FROM AccountMapRaw
+    GROUP BY DyingAccountId
+    HAVING COUNT(*) = 1
+)
+
+SELECT m.*
+FROM AccountMapRaw m
+INNER JOIN ValidDyingAccounts v
+    ON m.DyingAccountId = v.DyingAccountId
+ORDER BY m.DyingAccountName;
+
+
+================================================================================
+SCRIPT 5: Preview Child Records That Will Move
+================================================================================
+
+Purpose:
+--------
+Counts child records currently associated with dying Accounts that will be moved to master Accounts.
+
+Review these counts before running any update scripts.
+
+SQL:
+----
+
+WITH NormalizedAccounts AS
+(
+    SELECT
+        accountid,
+        name,
+        statecode,
+        meta_tobecleaned,
+        UPPER(LTRIM(RTRIM(ISNULL(meta_ablnumber, '')))) AS ABLKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line1, '')))) AS Line1Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line2, '')))) AS Line2Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line3, '')))) AS Line3Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_city, '')))) AS CityKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_stateorprovince, '')))) AS StateKey,
+        UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(address1_postalcode, ''))), ' ', ''), '-', '')) AS PostalKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_country, '')))) AS CountryKey
+    FROM account
+),
+AccountMapRaw AS
+(
+    SELECT
+        dying.accountid AS DyingAccountId,
+        master.accountid AS MasterAccountId
+    FROM NormalizedAccounts dying
+    INNER JOIN NormalizedAccounts master
+        ON dying.ABLKey = master.ABLKey
+        AND dying.Line1Key = master.Line1Key
+        AND dying.Line2Key = master.Line2Key
+        AND dying.Line3Key = master.Line3Key
+        AND dying.CityKey = master.CityKey
+        AND dying.StateKey = master.StateKey
+        AND dying.PostalKey = master.PostalKey
+        AND dying.CountryKey = master.CountryKey
+        AND dying.accountid <> master.accountid
+    WHERE
+        dying.meta_tobecleaned = 1
+        AND ISNULL(master.meta_tobecleaned, 0) = 0
+        AND dying.statecode = 0
+        AND master.statecode = 0
+        AND dying.ABLKey <> ''
+        AND dying.Line1Key <> ''
+        AND dying.CityKey <> ''
+        AND dying.StateKey <> ''
+        AND dying.PostalKey <> ''
+),
+ValidDyingAccounts AS
+(
+    SELECT DyingAccountId
+    FROM AccountMapRaw
+    GROUP BY DyingAccountId
+    HAVING COUNT(*) = 1
+),
+AccountMap AS
+(
+    SELECT m.*
+    FROM AccountMapRaw m
+    INNER JOIN ValidDyingAccounts v
+        ON m.DyingAccountId = v.DyingAccountId
+)
+
+SELECT 'Sales Orders' AS ChildTable, COUNT(*) AS RecordsToMove
+FROM salesorder so
+INNER JOIN AccountMap m ON so.customerid = m.DyingAccountId
+
+UNION ALL
+
+SELECT 'Invoices', COUNT(*)
+FROM invoice i
+INNER JOIN AccountMap m ON i.customerid = m.DyingAccountId
+
+UNION ALL
+
+SELECT 'Quotes', COUNT(*)
+FROM quote q
+INNER JOIN AccountMap m ON q.customerid = m.DyingAccountId
+
+UNION ALL
+
+SELECT 'Cases', COUNT(*)
+FROM incident c
+INNER JOIN AccountMap m ON c.customerid = m.DyingAccountId
+
+UNION ALL
+
+SELECT 'Opportunities', COUNT(*)
+FROM opportunity o
+INNER JOIN AccountMap m ON o.parentaccountid = m.DyingAccountId
+
+UNION ALL
+
+SELECT 'Contacts', COUNT(*)
+FROM contact con
+INNER JOIN AccountMap m ON con.parentcustomerid = m.DyingAccountId
+
+UNION ALL
+
+SELECT 'Notes', COUNT(*)
+FROM annotation n
+INNER JOIN AccountMap m ON n.objectid = m.DyingAccountId
+
+UNION ALL
+
+SELECT 'Phone Calls - Regarding', COUNT(*)
+FROM phonecall p
+INNER JOIN AccountMap m ON p.regardingobjectid = m.DyingAccountId
+
+UNION ALL
+
+SELECT 'Emails - Regarding', COUNT(*)
+FROM email e
+INNER JOIN AccountMap m ON e.regardingobjectid = m.DyingAccountId
+
+UNION ALL
+
+SELECT 'Tasks - Regarding', COUNT(*)
+FROM task t
+INNER JOIN AccountMap m ON t.regardingobjectid = m.DyingAccountId
+
+UNION ALL
+
+SELECT 'Appointments - Regarding', COUNT(*)
+FROM appointment a
+INNER JOIN AccountMap m ON a.regardingobjectid = m.DyingAccountId
+
+UNION ALL
+
+SELECT 'Activity Parties', COUNT(*)
+FROM activityparty ap
+INNER JOIN AccountMap m ON ap.partyid = m.DyingAccountId
+
+UNION ALL
+
+SELECT 'SharePoint Document Locations', COUNT(*)
+FROM sharepointdocumentlocation s
+INNER JOIN AccountMap m ON s.regardingobjectid = m.DyingAccountId
+
+UNION ALL
+
+SELECT 'Connections - Record 1', COUNT(*)
+FROM connection c
+INNER JOIN AccountMap m ON c.record1id = m.DyingAccountId
+
+UNION ALL
+
+SELECT 'Connections - Record 2', COUNT(*)
+FROM connection c
+INNER JOIN AccountMap m ON c.record2id = m.DyingAccountId;
+
+
+================================================================================
+REUSABLE ACCOUNT MAP CTE FOR UPDATE SCRIPTS
+================================================================================
+
+Purpose:
+--------
+Each update script below repeats this same AccountMap logic before the actual UPDATE statement.
+
+The AccountMap only includes safe one-to-one matches.
+
+DO NOT run this block by itself. It must be immediately followed by one UPDATE statement.
+
+SQL:
+----
+
+WITH NormalizedAccounts AS
+(
+    SELECT
+        accountid,
+        name,
+        statecode,
+        meta_tobecleaned,
+        UPPER(LTRIM(RTRIM(ISNULL(meta_ablnumber, '')))) AS ABLKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line1, '')))) AS Line1Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line2, '')))) AS Line2Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line3, '')))) AS Line3Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_city, '')))) AS CityKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_stateorprovince, '')))) AS StateKey,
+        UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(address1_postalcode, ''))), ' ', ''), '-', '')) AS PostalKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_country, '')))) AS CountryKey
+    FROM account
+),
+AccountMapRaw AS
+(
+    SELECT
+        dying.accountid AS DyingAccountId,
+        master.accountid AS MasterAccountId
+    FROM NormalizedAccounts dying
+    INNER JOIN NormalizedAccounts master
+        ON dying.ABLKey = master.ABLKey
+        AND dying.Line1Key = master.Line1Key
+        AND dying.Line2Key = master.Line2Key
+        AND dying.Line3Key = master.Line3Key
+        AND dying.CityKey = master.CityKey
+        AND dying.StateKey = master.StateKey
+        AND dying.PostalKey = master.PostalKey
+        AND dying.CountryKey = master.CountryKey
+        AND dying.accountid <> master.accountid
+    WHERE
+        dying.meta_tobecleaned = 1
+        AND ISNULL(master.meta_tobecleaned, 0) = 0
+        AND dying.statecode = 0
+        AND master.statecode = 0
+        AND dying.ABLKey <> ''
+        AND dying.Line1Key <> ''
+        AND dying.CityKey <> ''
+        AND dying.StateKey <> ''
+        AND dying.PostalKey <> ''
+),
+ValidDyingAccounts AS
+(
+    SELECT DyingAccountId
+    FROM AccountMapRaw
+    GROUP BY DyingAccountId
+    HAVING COUNT(*) = 1
+),
+AccountMap AS
+(
+    SELECT m.*
+    FROM AccountMapRaw m
+    INNER JOIN ValidDyingAccounts v
+        ON m.DyingAccountId = v.DyingAccountId
+)
+
+
+================================================================================
+SCRIPT 6: Move Sales Orders
+================================================================================
+
+Purpose:
+--------
+Moves Sales Orders from the dying Account to the matched master Account.
+
+Relationship field:
+    salesorder.customerid
+
+SQL:
+----
+
+WITH NormalizedAccounts AS
+(
+    SELECT
+        accountid,
+        name,
+        statecode,
+        meta_tobecleaned,
+        UPPER(LTRIM(RTRIM(ISNULL(meta_ablnumber, '')))) AS ABLKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line1, '')))) AS Line1Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line2, '')))) AS Line2Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line3, '')))) AS Line3Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_city, '')))) AS CityKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_stateorprovince, '')))) AS StateKey,
+        UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(address1_postalcode, ''))), ' ', ''), '-', '')) AS PostalKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_country, '')))) AS CountryKey
+    FROM account
+),
+AccountMapRaw AS
+(
+    SELECT dying.accountid AS DyingAccountId, master.accountid AS MasterAccountId
+    FROM NormalizedAccounts dying
+    INNER JOIN NormalizedAccounts master
+        ON dying.ABLKey = master.ABLKey
+        AND dying.Line1Key = master.Line1Key
+        AND dying.Line2Key = master.Line2Key
+        AND dying.Line3Key = master.Line3Key
+        AND dying.CityKey = master.CityKey
+        AND dying.StateKey = master.StateKey
+        AND dying.PostalKey = master.PostalKey
+        AND dying.CountryKey = master.CountryKey
+        AND dying.accountid <> master.accountid
+    WHERE dying.meta_tobecleaned = 1
+        AND ISNULL(master.meta_tobecleaned, 0) = 0
+        AND dying.statecode = 0
+        AND master.statecode = 0
+        AND dying.ABLKey <> ''
+        AND dying.Line1Key <> ''
+        AND dying.CityKey <> ''
+        AND dying.StateKey <> ''
+        AND dying.PostalKey <> ''
+),
+ValidDyingAccounts AS
+(
+    SELECT DyingAccountId
+    FROM AccountMapRaw
+    GROUP BY DyingAccountId
+    HAVING COUNT(*) = 1
+),
+AccountMap AS
+(
+    SELECT m.*
+    FROM AccountMapRaw m
+    INNER JOIN ValidDyingAccounts v ON m.DyingAccountId = v.DyingAccountId
+)
+
+UPDATE so
+SET customerid = m.MasterAccountId
+FROM salesorder so
+INNER JOIN AccountMap m
+    ON so.customerid = m.DyingAccountId;
+
+
+================================================================================
+SCRIPT 7: Move Invoices
+================================================================================
+
+Purpose:
+--------
+Moves Invoices from the dying Account to the matched master Account.
+
+Relationship field:
+    invoice.customerid
+
+SQL:
+----
+
+WITH NormalizedAccounts AS
+(
+    SELECT
+        accountid,
+        name,
+        statecode,
+        meta_tobecleaned,
+        UPPER(LTRIM(RTRIM(ISNULL(meta_ablnumber, '')))) AS ABLKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line1, '')))) AS Line1Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line2, '')))) AS Line2Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line3, '')))) AS Line3Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_city, '')))) AS CityKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_stateorprovince, '')))) AS StateKey,
+        UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(address1_postalcode, ''))), ' ', ''), '-', '')) AS PostalKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_country, '')))) AS CountryKey
+    FROM account
+),
+AccountMapRaw AS
+(
+    SELECT dying.accountid AS DyingAccountId, master.accountid AS MasterAccountId
+    FROM NormalizedAccounts dying
+    INNER JOIN NormalizedAccounts master
+        ON dying.ABLKey = master.ABLKey
+        AND dying.Line1Key = master.Line1Key
+        AND dying.Line2Key = master.Line2Key
+        AND dying.Line3Key = master.Line3Key
+        AND dying.CityKey = master.CityKey
+        AND dying.StateKey = master.StateKey
+        AND dying.PostalKey = master.PostalKey
+        AND dying.CountryKey = master.CountryKey
+        AND dying.accountid <> master.accountid
+    WHERE dying.meta_tobecleaned = 1
+        AND ISNULL(master.meta_tobecleaned, 0) = 0
+        AND dying.statecode = 0
+        AND master.statecode = 0
+        AND dying.ABLKey <> ''
+        AND dying.Line1Key <> ''
+        AND dying.CityKey <> ''
+        AND dying.StateKey <> ''
+        AND dying.PostalKey <> ''
+),
+ValidDyingAccounts AS
+(
+    SELECT DyingAccountId
+    FROM AccountMapRaw
+    GROUP BY DyingAccountId
+    HAVING COUNT(*) = 1
+),
+AccountMap AS
+(
+    SELECT m.*
+    FROM AccountMapRaw m
+    INNER JOIN ValidDyingAccounts v ON m.DyingAccountId = v.DyingAccountId
+)
+
+UPDATE i
+SET customerid = m.MasterAccountId
+FROM invoice i
+INNER JOIN AccountMap m
+    ON i.customerid = m.DyingAccountId;
+
+
+================================================================================
+SCRIPT 8: Move Quotes
+================================================================================
+
+Purpose:
+--------
+Moves Quotes from the dying Account to the matched master Account.
+
+Relationship field:
+    quote.customerid
+
+SQL:
+----
+
+WITH NormalizedAccounts AS
+(
+    SELECT
+        accountid,
+        name,
+        statecode,
+        meta_tobecleaned,
+        UPPER(LTRIM(RTRIM(ISNULL(meta_ablnumber, '')))) AS ABLKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line1, '')))) AS Line1Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line2, '')))) AS Line2Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line3, '')))) AS Line3Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_city, '')))) AS CityKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_stateorprovince, '')))) AS StateKey,
+        UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(address1_postalcode, ''))), ' ', ''), '-', '')) AS PostalKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_country, '')))) AS CountryKey
+    FROM account
+),
+AccountMapRaw AS
+(
+    SELECT dying.accountid AS DyingAccountId, master.accountid AS MasterAccountId
+    FROM NormalizedAccounts dying
+    INNER JOIN NormalizedAccounts master
+        ON dying.ABLKey = master.ABLKey
+        AND dying.Line1Key = master.Line1Key
+        AND dying.Line2Key = master.Line2Key
+        AND dying.Line3Key = master.Line3Key
+        AND dying.CityKey = master.CityKey
+        AND dying.StateKey = master.StateKey
+        AND dying.PostalKey = master.PostalKey
+        AND dying.CountryKey = master.CountryKey
+        AND dying.accountid <> master.accountid
+    WHERE dying.meta_tobecleaned = 1
+        AND ISNULL(master.meta_tobecleaned, 0) = 0
+        AND dying.statecode = 0
+        AND master.statecode = 0
+        AND dying.ABLKey <> ''
+        AND dying.Line1Key <> ''
+        AND dying.CityKey <> ''
+        AND dying.StateKey <> ''
+        AND dying.PostalKey <> ''
+),
+ValidDyingAccounts AS
+(
+    SELECT DyingAccountId
+    FROM AccountMapRaw
+    GROUP BY DyingAccountId
+    HAVING COUNT(*) = 1
+),
+AccountMap AS
+(
+    SELECT m.*
+    FROM AccountMapRaw m
+    INNER JOIN ValidDyingAccounts v ON m.DyingAccountId = v.DyingAccountId
+)
+
+UPDATE q
+SET customerid = m.MasterAccountId
+FROM quote q
+INNER JOIN AccountMap m
+    ON q.customerid = m.DyingAccountId;
+
+
+================================================================================
+SCRIPT 9: Move Cases
+================================================================================
+
+Purpose:
+--------
+Moves Cases from the dying Account to the matched master Account.
+
+Relationship field:
+    incident.customerid
+
+SQL:
+----
+
+WITH NormalizedAccounts AS
+(
+    SELECT
+        accountid,
+        name,
+        statecode,
+        meta_tobecleaned,
+        UPPER(LTRIM(RTRIM(ISNULL(meta_ablnumber, '')))) AS ABLKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line1, '')))) AS Line1Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line2, '')))) AS Line2Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line3, '')))) AS Line3Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_city, '')))) AS CityKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_stateorprovince, '')))) AS StateKey,
+        UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(address1_postalcode, ''))), ' ', ''), '-', '')) AS PostalKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_country, '')))) AS CountryKey
+    FROM account
+),
+AccountMapRaw AS
+(
+    SELECT dying.accountid AS DyingAccountId, master.accountid AS MasterAccountId
+    FROM NormalizedAccounts dying
+    INNER JOIN NormalizedAccounts master
+        ON dying.ABLKey = master.ABLKey
+        AND dying.Line1Key = master.Line1Key
+        AND dying.Line2Key = master.Line2Key
+        AND dying.Line3Key = master.Line3Key
+        AND dying.CityKey = master.CityKey
+        AND dying.StateKey = master.StateKey
+        AND dying.PostalKey = master.PostalKey
+        AND dying.CountryKey = master.CountryKey
+        AND dying.accountid <> master.accountid
+    WHERE dying.meta_tobecleaned = 1
+        AND ISNULL(master.meta_tobecleaned, 0) = 0
+        AND dying.statecode = 0
+        AND master.statecode = 0
+        AND dying.ABLKey <> ''
+        AND dying.Line1Key <> ''
+        AND dying.CityKey <> ''
+        AND dying.StateKey <> ''
+        AND dying.PostalKey <> ''
+),
+ValidDyingAccounts AS
+(
+    SELECT DyingAccountId
+    FROM AccountMapRaw
+    GROUP BY DyingAccountId
+    HAVING COUNT(*) = 1
+),
+AccountMap AS
+(
+    SELECT m.*
+    FROM AccountMapRaw m
+    INNER JOIN ValidDyingAccounts v ON m.DyingAccountId = v.DyingAccountId
+)
+
+UPDATE c
+SET customerid = m.MasterAccountId
+FROM incident c
+INNER JOIN AccountMap m
+    ON c.customerid = m.DyingAccountId;
+
+
+================================================================================
+SCRIPT 10: Move Opportunities
+================================================================================
+
+Purpose:
+--------
+Moves Opportunities from the dying Account to the matched master Account.
+
+Relationship field:
+    opportunity.parentaccountid
+
+SQL:
+----
+
+WITH NormalizedAccounts AS
+(
+    SELECT
+        accountid,
+        name,
+        statecode,
+        meta_tobecleaned,
+        UPPER(LTRIM(RTRIM(ISNULL(meta_ablnumber, '')))) AS ABLKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line1, '')))) AS Line1Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line2, '')))) AS Line2Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line3, '')))) AS Line3Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_city, '')))) AS CityKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_stateorprovince, '')))) AS StateKey,
+        UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(address1_postalcode, ''))), ' ', ''), '-', '')) AS PostalKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_country, '')))) AS CountryKey
+    FROM account
+),
+AccountMapRaw AS
+(
+    SELECT dying.accountid AS DyingAccountId, master.accountid AS MasterAccountId
+    FROM NormalizedAccounts dying
+    INNER JOIN NormalizedAccounts master
+        ON dying.ABLKey = master.ABLKey
+        AND dying.Line1Key = master.Line1Key
+        AND dying.Line2Key = master.Line2Key
+        AND dying.Line3Key = master.Line3Key
+        AND dying.CityKey = master.CityKey
+        AND dying.StateKey = master.StateKey
+        AND dying.PostalKey = master.PostalKey
+        AND dying.CountryKey = master.CountryKey
+        AND dying.accountid <> master.accountid
+    WHERE dying.meta_tobecleaned = 1
+        AND ISNULL(master.meta_tobecleaned, 0) = 0
+        AND dying.statecode = 0
+        AND master.statecode = 0
+        AND dying.ABLKey <> ''
+        AND dying.Line1Key <> ''
+        AND dying.CityKey <> ''
+        AND dying.StateKey <> ''
+        AND dying.PostalKey <> ''
+),
+ValidDyingAccounts AS
+(
+    SELECT DyingAccountId
+    FROM AccountMapRaw
+    GROUP BY DyingAccountId
+    HAVING COUNT(*) = 1
+),
+AccountMap AS
+(
+    SELECT m.*
+    FROM AccountMapRaw m
+    INNER JOIN ValidDyingAccounts v ON m.DyingAccountId = v.DyingAccountId
+)
+
+UPDATE o
+SET parentaccountid = m.MasterAccountId
+FROM opportunity o
+INNER JOIN AccountMap m
+    ON o.parentaccountid = m.DyingAccountId;
+
+
+================================================================================
+SCRIPT 11: Move Contacts
+================================================================================
+
+Purpose:
+--------
+Moves Contacts from the dying Account to the matched master Account.
+
+Relationship field:
+    contact.parentcustomerid
+
+SQL:
+----
+
+WITH NormalizedAccounts AS
+(
+    SELECT
+        accountid,
+        name,
+        statecode,
+        meta_tobecleaned,
+        UPPER(LTRIM(RTRIM(ISNULL(meta_ablnumber, '')))) AS ABLKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line1, '')))) AS Line1Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line2, '')))) AS Line2Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line3, '')))) AS Line3Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_city, '')))) AS CityKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_stateorprovince, '')))) AS StateKey,
+        UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(address1_postalcode, ''))), ' ', ''), '-', '')) AS PostalKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_country, '')))) AS CountryKey
+    FROM account
+),
+AccountMapRaw AS
+(
+    SELECT dying.accountid AS DyingAccountId, master.accountid AS MasterAccountId
+    FROM NormalizedAccounts dying
+    INNER JOIN NormalizedAccounts master
+        ON dying.ABLKey = master.ABLKey
+        AND dying.Line1Key = master.Line1Key
+        AND dying.Line2Key = master.Line2Key
+        AND dying.Line3Key = master.Line3Key
+        AND dying.CityKey = master.CityKey
+        AND dying.StateKey = master.StateKey
+        AND dying.PostalKey = master.PostalKey
+        AND dying.CountryKey = master.CountryKey
+        AND dying.accountid <> master.accountid
+    WHERE dying.meta_tobecleaned = 1
+        AND ISNULL(master.meta_tobecleaned, 0) = 0
+        AND dying.statecode = 0
+        AND master.statecode = 0
+        AND dying.ABLKey <> ''
+        AND dying.Line1Key <> ''
+        AND dying.CityKey <> ''
+        AND dying.StateKey <> ''
+        AND dying.PostalKey <> ''
+),
+ValidDyingAccounts AS
+(
+    SELECT DyingAccountId
+    FROM AccountMapRaw
+    GROUP BY DyingAccountId
+    HAVING COUNT(*) = 1
+),
+AccountMap AS
+(
+    SELECT m.*
+    FROM AccountMapRaw m
+    INNER JOIN ValidDyingAccounts v ON m.DyingAccountId = v.DyingAccountId
+)
+
+UPDATE con
+SET parentcustomerid = m.MasterAccountId
+FROM contact con
+INNER JOIN AccountMap m
+    ON con.parentcustomerid = m.DyingAccountId;
+
+
+================================================================================
+SCRIPT 12: Move Phone Calls
+================================================================================
+
+Purpose:
+--------
+Moves Phone Calls where the dying Account is in the Regarding field.
+
+Relationship field:
+    phonecall.regardingobjectid
+
+SQL:
+----
+
+WITH NormalizedAccounts AS
+(
+    SELECT
+        accountid,
+        name,
+        statecode,
+        meta_tobecleaned,
+        UPPER(LTRIM(RTRIM(ISNULL(meta_ablnumber, '')))) AS ABLKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line1, '')))) AS Line1Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line2, '')))) AS Line2Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line3, '')))) AS Line3Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_city, '')))) AS CityKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_stateorprovince, '')))) AS StateKey,
+        UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(address1_postalcode, ''))), ' ', ''), '-', '')) AS PostalKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_country, '')))) AS CountryKey
+    FROM account
+),
+AccountMapRaw AS
+(
+    SELECT dying.accountid AS DyingAccountId, master.accountid AS MasterAccountId
+    FROM NormalizedAccounts dying
+    INNER JOIN NormalizedAccounts master
+        ON dying.ABLKey = master.ABLKey
+        AND dying.Line1Key = master.Line1Key
+        AND dying.Line2Key = master.Line2Key
+        AND dying.Line3Key = master.Line3Key
+        AND dying.CityKey = master.CityKey
+        AND dying.StateKey = master.StateKey
+        AND dying.PostalKey = master.PostalKey
+        AND dying.CountryKey = master.CountryKey
+        AND dying.accountid <> master.accountid
+    WHERE dying.meta_tobecleaned = 1
+        AND ISNULL(master.meta_tobecleaned, 0) = 0
+        AND dying.statecode = 0
+        AND master.statecode = 0
+        AND dying.ABLKey <> ''
+        AND dying.Line1Key <> ''
+        AND dying.CityKey <> ''
+        AND dying.StateKey <> ''
+        AND dying.PostalKey <> ''
+),
+ValidDyingAccounts AS
+(
+    SELECT DyingAccountId
+    FROM AccountMapRaw
+    GROUP BY DyingAccountId
+    HAVING COUNT(*) = 1
+),
+AccountMap AS
+(
+    SELECT m.*
+    FROM AccountMapRaw m
+    INNER JOIN ValidDyingAccounts v ON m.DyingAccountId = v.DyingAccountId
+)
+
+UPDATE p
+SET regardingobjectid = m.MasterAccountId
+FROM phonecall p
+INNER JOIN AccountMap m
+    ON p.regardingobjectid = m.DyingAccountId;
+
+
+================================================================================
+SCRIPT 13: Move Emails
+================================================================================
+
+Purpose:
+--------
+Moves Emails where the dying Account is in the Regarding field.
+
+Relationship field:
+    email.regardingobjectid
+
+SQL:
+----
+
+WITH NormalizedAccounts AS
+(
+    SELECT
+        accountid,
+        name,
+        statecode,
+        meta_tobecleaned,
+        UPPER(LTRIM(RTRIM(ISNULL(meta_ablnumber, '')))) AS ABLKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line1, '')))) AS Line1Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line2, '')))) AS Line2Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line3, '')))) AS Line3Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_city, '')))) AS CityKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_stateorprovince, '')))) AS StateKey,
+        UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(address1_postalcode, ''))), ' ', ''), '-', '')) AS PostalKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_country, '')))) AS CountryKey
+    FROM account
+),
+AccountMapRaw AS
+(
+    SELECT dying.accountid AS DyingAccountId, master.accountid AS MasterAccountId
+    FROM NormalizedAccounts dying
+    INNER JOIN NormalizedAccounts master
+        ON dying.ABLKey = master.ABLKey
+        AND dying.Line1Key = master.Line1Key
+        AND dying.Line2Key = master.Line2Key
+        AND dying.Line3Key = master.Line3Key
+        AND dying.CityKey = master.CityKey
+        AND dying.StateKey = master.StateKey
+        AND dying.PostalKey = master.PostalKey
+        AND dying.CountryKey = master.CountryKey
+        AND dying.accountid <> master.accountid
+    WHERE dying.meta_tobecleaned = 1
+        AND ISNULL(master.meta_tobecleaned, 0) = 0
+        AND dying.statecode = 0
+        AND master.statecode = 0
+        AND dying.ABLKey <> ''
+        AND dying.Line1Key <> ''
+        AND dying.CityKey <> ''
+        AND dying.StateKey <> ''
+        AND dying.PostalKey <> ''
+),
+ValidDyingAccounts AS
+(
+    SELECT DyingAccountId
+    FROM AccountMapRaw
+    GROUP BY DyingAccountId
+    HAVING COUNT(*) = 1
+),
+AccountMap AS
+(
+    SELECT m.*
+    FROM AccountMapRaw m
+    INNER JOIN ValidDyingAccounts v ON m.DyingAccountId = v.DyingAccountId
+)
+
+UPDATE e
+SET regardingobjectid = m.MasterAccountId
+FROM email e
+INNER JOIN AccountMap m
+    ON e.regardingobjectid = m.DyingAccountId;
+
+
+================================================================================
+SCRIPT 14: Move Tasks
+================================================================================
+
+Purpose:
+--------
+Moves Tasks where the dying Account is in the Regarding field.
+
+Relationship field:
+    task.regardingobjectid
+
+SQL:
+----
+
+WITH NormalizedAccounts AS
+(
+    SELECT
+        accountid,
+        name,
+        statecode,
+        meta_tobecleaned,
+        UPPER(LTRIM(RTRIM(ISNULL(meta_ablnumber, '')))) AS ABLKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line1, '')))) AS Line1Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line2, '')))) AS Line2Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line3, '')))) AS Line3Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_city, '')))) AS CityKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_stateorprovince, '')))) AS StateKey,
+        UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(address1_postalcode, ''))), ' ', ''), '-', '')) AS PostalKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_country, '')))) AS CountryKey
+    FROM account
+),
+AccountMapRaw AS
+(
+    SELECT dying.accountid AS DyingAccountId, master.accountid AS MasterAccountId
+    FROM NormalizedAccounts dying
+    INNER JOIN NormalizedAccounts master
+        ON dying.ABLKey = master.ABLKey
+        AND dying.Line1Key = master.Line1Key
+        AND dying.Line2Key = master.Line2Key
+        AND dying.Line3Key = master.Line3Key
+        AND dying.CityKey = master.CityKey
+        AND dying.StateKey = master.StateKey
+        AND dying.PostalKey = master.PostalKey
+        AND dying.CountryKey = master.CountryKey
+        AND dying.accountid <> master.accountid
+    WHERE dying.meta_tobecleaned = 1
+        AND ISNULL(master.meta_tobecleaned, 0) = 0
+        AND dying.statecode = 0
+        AND master.statecode = 0
+        AND dying.ABLKey <> ''
+        AND dying.Line1Key <> ''
+        AND dying.CityKey <> ''
+        AND dying.StateKey <> ''
+        AND dying.PostalKey <> ''
+),
+ValidDyingAccounts AS
+(
+    SELECT DyingAccountId
+    FROM AccountMapRaw
+    GROUP BY DyingAccountId
+    HAVING COUNT(*) = 1
+),
+AccountMap AS
+(
+    SELECT m.*
+    FROM AccountMapRaw m
+    INNER JOIN ValidDyingAccounts v ON m.DyingAccountId = v.DyingAccountId
+)
+
+UPDATE t
+SET regardingobjectid = m.MasterAccountId
+FROM task t
+INNER JOIN AccountMap m
+    ON t.regardingobjectid = m.DyingAccountId;
+
+
+================================================================================
+SCRIPT 15: Move Appointments
+================================================================================
+
+Purpose:
+--------
+Moves Appointments where the dying Account is in the Regarding field.
+
+Relationship field:
+    appointment.regardingobjectid
+
+SQL:
+----
+
+WITH NormalizedAccounts AS
+(
+    SELECT
+        accountid,
+        name,
+        statecode,
+        meta_tobecleaned,
+        UPPER(LTRIM(RTRIM(ISNULL(meta_ablnumber, '')))) AS ABLKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line1, '')))) AS Line1Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line2, '')))) AS Line2Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line3, '')))) AS Line3Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_city, '')))) AS CityKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_stateorprovince, '')))) AS StateKey,
+        UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(address1_postalcode, ''))), ' ', ''), '-', '')) AS PostalKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_country, '')))) AS CountryKey
+    FROM account
+),
+AccountMapRaw AS
+(
+    SELECT dying.accountid AS DyingAccountId, master.accountid AS MasterAccountId
+    FROM NormalizedAccounts dying
+    INNER JOIN NormalizedAccounts master
+        ON dying.ABLKey = master.ABLKey
+        AND dying.Line1Key = master.Line1Key
+        AND dying.Line2Key = master.Line2Key
+        AND dying.Line3Key = master.Line3Key
+        AND dying.CityKey = master.CityKey
+        AND dying.StateKey = master.StateKey
+        AND dying.PostalKey = master.PostalKey
+        AND dying.CountryKey = master.CountryKey
+        AND dying.accountid <> master.accountid
+    WHERE dying.meta_tobecleaned = 1
+        AND ISNULL(master.meta_tobecleaned, 0) = 0
+        AND dying.statecode = 0
+        AND master.statecode = 0
+        AND dying.ABLKey <> ''
+        AND dying.Line1Key <> ''
+        AND dying.CityKey <> ''
+        AND dying.StateKey <> ''
+        AND dying.PostalKey <> ''
+),
+ValidDyingAccounts AS
+(
+    SELECT DyingAccountId
+    FROM AccountMapRaw
+    GROUP BY DyingAccountId
+    HAVING COUNT(*) = 1
+),
+AccountMap AS
+(
+    SELECT m.*
+    FROM AccountMapRaw m
+    INNER JOIN ValidDyingAccounts v ON m.DyingAccountId = v.DyingAccountId
+)
+
+UPDATE a
+SET regardingobjectid = m.MasterAccountId
+FROM appointment a
+INNER JOIN AccountMap m
+    ON a.regardingobjectid = m.DyingAccountId;
+
+
+================================================================================
+SCRIPT 16: Move Notes
+================================================================================
+
+Purpose:
+--------
+Moves Notes from the dying Account to the matched master Account.
+
+Relationship field:
+    annotation.objectid
+
+SQL:
+----
+
+WITH NormalizedAccounts AS
+(
+    SELECT
+        accountid,
+        name,
+        statecode,
+        meta_tobecleaned,
+        UPPER(LTRIM(RTRIM(ISNULL(meta_ablnumber, '')))) AS ABLKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line1, '')))) AS Line1Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line2, '')))) AS Line2Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line3, '')))) AS Line3Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_city, '')))) AS CityKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_stateorprovince, '')))) AS StateKey,
+        UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(address1_postalcode, ''))), ' ', ''), '-', '')) AS PostalKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_country, '')))) AS CountryKey
+    FROM account
+),
+AccountMapRaw AS
+(
+    SELECT dying.accountid AS DyingAccountId, master.accountid AS MasterAccountId
+    FROM NormalizedAccounts dying
+    INNER JOIN NormalizedAccounts master
+        ON dying.ABLKey = master.ABLKey
+        AND dying.Line1Key = master.Line1Key
+        AND dying.Line2Key = master.Line2Key
+        AND dying.Line3Key = master.Line3Key
+        AND dying.CityKey = master.CityKey
+        AND dying.StateKey = master.StateKey
+        AND dying.PostalKey = master.PostalKey
+        AND dying.CountryKey = master.CountryKey
+        AND dying.accountid <> master.accountid
+    WHERE dying.meta_tobecleaned = 1
+        AND ISNULL(master.meta_tobecleaned, 0) = 0
+        AND dying.statecode = 0
+        AND master.statecode = 0
+        AND dying.ABLKey <> ''
+        AND dying.Line1Key <> ''
+        AND dying.CityKey <> ''
+        AND dying.StateKey <> ''
+        AND dying.PostalKey <> ''
+),
+ValidDyingAccounts AS
+(
+    SELECT DyingAccountId
+    FROM AccountMapRaw
+    GROUP BY DyingAccountId
+    HAVING COUNT(*) = 1
+),
+AccountMap AS
+(
+    SELECT m.*
+    FROM AccountMapRaw m
+    INNER JOIN ValidDyingAccounts v ON m.DyingAccountId = v.DyingAccountId
+)
+
+UPDATE n
+SET objectid = m.MasterAccountId
+FROM annotation n
+INNER JOIN AccountMap m
+    ON n.objectid = m.DyingAccountId;
+
+
+================================================================================
+SCRIPT 17: Move Activity Parties
+================================================================================
+
+Purpose:
+--------
+Moves Activity Party records where the dying Account is a participant in an activity,
+such as email sender, recipient, appointment attendee, etc.
+
+Relationship field:
+    activityparty.partyid
+
+Important:
+----------
+partyid is a polymorphic lookup. Because this cleanup is Account-to-Account, it should be safe,
+but validate carefully before running this in production.
+
+SQL:
+----
+
+WITH NormalizedAccounts AS
+(
+    SELECT
+        accountid,
+        name,
+        statecode,
+        meta_tobecleaned,
+        UPPER(LTRIM(RTRIM(ISNULL(meta_ablnumber, '')))) AS ABLKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line1, '')))) AS Line1Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line2, '')))) AS Line2Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line3, '')))) AS Line3Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_city, '')))) AS CityKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_stateorprovince, '')))) AS StateKey,
+        UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(address1_postalcode, ''))), ' ', ''), '-', '')) AS PostalKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_country, '')))) AS CountryKey
+    FROM account
+),
+AccountMapRaw AS
+(
+    SELECT dying.accountid AS DyingAccountId, master.accountid AS MasterAccountId
+    FROM NormalizedAccounts dying
+    INNER JOIN NormalizedAccounts master
+        ON dying.ABLKey = master.ABLKey
+        AND dying.Line1Key = master.Line1Key
+        AND dying.Line2Key = master.Line2Key
+        AND dying.Line3Key = master.Line3Key
+        AND dying.CityKey = master.CityKey
+        AND dying.StateKey = master.StateKey
+        AND dying.PostalKey = master.PostalKey
+        AND dying.CountryKey = master.CountryKey
+        AND dying.accountid <> master.accountid
+    WHERE dying.meta_tobecleaned = 1
+        AND ISNULL(master.meta_tobecleaned, 0) = 0
+        AND dying.statecode = 0
+        AND master.statecode = 0
+        AND dying.ABLKey <> ''
+        AND dying.Line1Key <> ''
+        AND dying.CityKey <> ''
+        AND dying.StateKey <> ''
+        AND dying.PostalKey <> ''
+),
+ValidDyingAccounts AS
+(
+    SELECT DyingAccountId
+    FROM AccountMapRaw
+    GROUP BY DyingAccountId
+    HAVING COUNT(*) = 1
+),
+AccountMap AS
+(
+    SELECT m.*
+    FROM AccountMapRaw m
+    INNER JOIN ValidDyingAccounts v ON m.DyingAccountId = v.DyingAccountId
+)
+
+UPDATE ap
+SET partyid = m.MasterAccountId
+FROM activityparty ap
+INNER JOIN AccountMap m
+    ON ap.partyid = m.DyingAccountId;
+
+
+================================================================================
+SCRIPT 18: Move SharePoint Document Locations
+================================================================================
+
+Purpose:
+--------
+Moves SharePoint Document Location records from the dying Account to the master Account.
+
+Relationship field:
+    sharepointdocumentlocation.regardingobjectid
+
+SQL:
+----
+
+WITH NormalizedAccounts AS
+(
+    SELECT
+        accountid,
+        name,
+        statecode,
+        meta_tobecleaned,
+        UPPER(LTRIM(RTRIM(ISNULL(meta_ablnumber, '')))) AS ABLKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line1, '')))) AS Line1Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line2, '')))) AS Line2Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line3, '')))) AS Line3Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_city, '')))) AS CityKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_stateorprovince, '')))) AS StateKey,
+        UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(address1_postalcode, ''))), ' ', ''), '-', '')) AS PostalKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_country, '')))) AS CountryKey
+    FROM account
+),
+AccountMapRaw AS
+(
+    SELECT dying.accountid AS DyingAccountId, master.accountid AS MasterAccountId
+    FROM NormalizedAccounts dying
+    INNER JOIN NormalizedAccounts master
+        ON dying.ABLKey = master.ABLKey
+        AND dying.Line1Key = master.Line1Key
+        AND dying.Line2Key = master.Line2Key
+        AND dying.Line3Key = master.Line3Key
+        AND dying.CityKey = master.CityKey
+        AND dying.StateKey = master.StateKey
+        AND dying.PostalKey = master.PostalKey
+        AND dying.CountryKey = master.CountryKey
+        AND dying.accountid <> master.accountid
+    WHERE dying.meta_tobecleaned = 1
+        AND ISNULL(master.meta_tobecleaned, 0) = 0
+        AND dying.statecode = 0
+        AND master.statecode = 0
+        AND dying.ABLKey <> ''
+        AND dying.Line1Key <> ''
+        AND dying.CityKey <> ''
+        AND dying.StateKey <> ''
+        AND dying.PostalKey <> ''
+),
+ValidDyingAccounts AS
+(
+    SELECT DyingAccountId
+    FROM AccountMapRaw
+    GROUP BY DyingAccountId
+    HAVING COUNT(*) = 1
+),
+AccountMap AS
+(
+    SELECT m.*
+    FROM AccountMapRaw m
+    INNER JOIN ValidDyingAccounts v ON m.DyingAccountId = v.DyingAccountId
+)
+
+UPDATE s
+SET regardingobjectid = m.MasterAccountId
+FROM sharepointdocumentlocation s
+INNER JOIN AccountMap m
+    ON s.regardingobjectid = m.DyingAccountId;
+
+
+================================================================================
+SCRIPT 19: Move Connections Where Dying Account Is Record 1
+================================================================================
+
+Purpose:
+--------
+Moves Connections where the dying Account is stored in record1id.
+
+Relationship field:
+    connection.record1id
+
+SQL:
+----
+
+WITH NormalizedAccounts AS
+(
+    SELECT
+        accountid,
+        name,
+        statecode,
+        meta_tobecleaned,
+        UPPER(LTRIM(RTRIM(ISNULL(meta_ablnumber, '')))) AS ABLKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line1, '')))) AS Line1Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line2, '')))) AS Line2Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line3, '')))) AS Line3Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_city, '')))) AS CityKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_stateorprovince, '')))) AS StateKey,
+        UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(address1_postalcode, ''))), ' ', ''), '-', '')) AS PostalKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_country, '')))) AS CountryKey
+    FROM account
+),
+AccountMapRaw AS
+(
+    SELECT dying.accountid AS DyingAccountId, master.accountid AS MasterAccountId
+    FROM NormalizedAccounts dying
+    INNER JOIN NormalizedAccounts master
+        ON dying.ABLKey = master.ABLKey
+        AND dying.Line1Key = master.Line1Key
+        AND dying.Line2Key = master.Line2Key
+        AND dying.Line3Key = master.Line3Key
+        AND dying.CityKey = master.CityKey
+        AND dying.StateKey = master.StateKey
+        AND dying.PostalKey = master.PostalKey
+        AND dying.CountryKey = master.CountryKey
+        AND dying.accountid <> master.accountid
+    WHERE dying.meta_tobecleaned = 1
+        AND ISNULL(master.meta_tobecleaned, 0) = 0
+        AND dying.statecode = 0
+        AND master.statecode = 0
+        AND dying.ABLKey <> ''
+        AND dying.Line1Key <> ''
+        AND dying.CityKey <> ''
+        AND dying.StateKey <> ''
+        AND dying.PostalKey <> ''
+),
+ValidDyingAccounts AS
+(
+    SELECT DyingAccountId
+    FROM AccountMapRaw
+    GROUP BY DyingAccountId
+    HAVING COUNT(*) = 1
+),
+AccountMap AS
+(
+    SELECT m.*
+    FROM AccountMapRaw m
+    INNER JOIN ValidDyingAccounts v ON m.DyingAccountId = v.DyingAccountId
+)
+
+UPDATE c
+SET record1id = m.MasterAccountId
+FROM connection c
+INNER JOIN AccountMap m
+    ON c.record1id = m.DyingAccountId;
+
+
+================================================================================
+SCRIPT 20: Move Connections Where Dying Account Is Record 2
+================================================================================
+
+Purpose:
+--------
+Moves Connections where the dying Account is stored in record2id.
+
+Relationship field:
+    connection.record2id
+
+SQL:
+----
+
+WITH NormalizedAccounts AS
+(
+    SELECT
+        accountid,
+        name,
+        statecode,
+        meta_tobecleaned,
+        UPPER(LTRIM(RTRIM(ISNULL(meta_ablnumber, '')))) AS ABLKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line1, '')))) AS Line1Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line2, '')))) AS Line2Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line3, '')))) AS Line3Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_city, '')))) AS CityKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_stateorprovince, '')))) AS StateKey,
+        UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(address1_postalcode, ''))), ' ', ''), '-', '')) AS PostalKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_country, '')))) AS CountryKey
+    FROM account
+),
+AccountMapRaw AS
+(
+    SELECT dying.accountid AS DyingAccountId, master.accountid AS MasterAccountId
+    FROM NormalizedAccounts dying
+    INNER JOIN NormalizedAccounts master
+        ON dying.ABLKey = master.ABLKey
+        AND dying.Line1Key = master.Line1Key
+        AND dying.Line2Key = master.Line2Key
+        AND dying.Line3Key = master.Line3Key
+        AND dying.CityKey = master.CityKey
+        AND dying.StateKey = master.StateKey
+        AND dying.PostalKey = master.PostalKey
+        AND dying.CountryKey = master.CountryKey
+        AND dying.accountid <> master.accountid
+    WHERE dying.meta_tobecleaned = 1
+        AND ISNULL(master.meta_tobecleaned, 0) = 0
+        AND dying.statecode = 0
+        AND master.statecode = 0
+        AND dying.ABLKey <> ''
+        AND dying.Line1Key <> ''
+        AND dying.CityKey <> ''
+        AND dying.StateKey <> ''
+        AND dying.PostalKey <> ''
+),
+ValidDyingAccounts AS
+(
+    SELECT DyingAccountId
+    FROM AccountMapRaw
+    GROUP BY DyingAccountId
+    HAVING COUNT(*) = 1
+),
+AccountMap AS
+(
+    SELECT m.*
+    FROM AccountMapRaw m
+    INNER JOIN ValidDyingAccounts v ON m.DyingAccountId = v.DyingAccountId
+)
+
+UPDATE c
+SET record2id = m.MasterAccountId
+FROM connection c
+INNER JOIN AccountMap m
+    ON c.record2id = m.DyingAccountId;
+
+
+================================================================================
+SCRIPT 21: Deactivate Dying Accounts After Validation
+================================================================================
+
+Purpose:
+--------
+Deactivates dying Accounts after child records have been moved successfully.
+
+Only run this after validating:
+    - Orders moved
+    - Invoices moved
+    - Quotes moved
+    - Cases moved
+    - Opportunities moved
+    - Contacts moved
+    - Activities moved
+    - Notes moved
+    - Connections moved
+    - SharePoint Document Locations moved, if applicable
+
+SQL:
+----
+
+WITH NormalizedAccounts AS
+(
+    SELECT
+        accountid,
+        name,
+        statecode,
+        meta_tobecleaned,
+        UPPER(LTRIM(RTRIM(ISNULL(meta_ablnumber, '')))) AS ABLKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line1, '')))) AS Line1Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line2, '')))) AS Line2Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line3, '')))) AS Line3Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_city, '')))) AS CityKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_stateorprovince, '')))) AS StateKey,
+        UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(address1_postalcode, ''))), ' ', ''), '-', '')) AS PostalKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_country, '')))) AS CountryKey
+    FROM account
+),
+AccountMapRaw AS
+(
+    SELECT dying.accountid AS DyingAccountId, master.accountid AS MasterAccountId
+    FROM NormalizedAccounts dying
+    INNER JOIN NormalizedAccounts master
+        ON dying.ABLKey = master.ABLKey
+        AND dying.Line1Key = master.Line1Key
+        AND dying.Line2Key = master.Line2Key
+        AND dying.Line3Key = master.Line3Key
+        AND dying.CityKey = master.CityKey
+        AND dying.StateKey = master.StateKey
+        AND dying.PostalKey = master.PostalKey
+        AND dying.CountryKey = master.CountryKey
+        AND dying.accountid <> master.accountid
+    WHERE dying.meta_tobecleaned = 1
+        AND ISNULL(master.meta_tobecleaned, 0) = 0
+        AND dying.statecode = 0
+        AND master.statecode = 0
+        AND dying.ABLKey <> ''
+        AND dying.Line1Key <> ''
+        AND dying.CityKey <> ''
+        AND dying.StateKey <> ''
+        AND dying.PostalKey <> ''
+),
+ValidDyingAccounts AS
+(
+    SELECT DyingAccountId
+    FROM AccountMapRaw
+    GROUP BY DyingAccountId
+    HAVING COUNT(*) = 1
+),
+AccountMap AS
+(
+    SELECT m.*
+    FROM AccountMapRaw m
+    INNER JOIN ValidDyingAccounts v ON m.DyingAccountId = v.DyingAccountId
+)
+
+UPDATE a
+SET
+    statecode = 1,
+    statuscode = 2
+FROM account a
+INNER JOIN AccountMap m
+    ON a.accountid = m.DyingAccountId;
+
+
+================================================================================
+SCRIPT 22: Post-Move Validation
+================================================================================
+
+Purpose:
+--------
+Checks whether any child records still point to dying Accounts that were safely matched to a master Account.
+
+Run this after the move scripts.
+
+Expected result:
+----------------
+All counts should be 0 before deactivating the dying Accounts.
+
+SQL:
+----
+
+WITH NormalizedAccounts AS
+(
+    SELECT
+        accountid,
+        name,
+        statecode,
+        meta_tobecleaned,
+        UPPER(LTRIM(RTRIM(ISNULL(meta_ablnumber, '')))) AS ABLKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line1, '')))) AS Line1Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line2, '')))) AS Line2Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_line3, '')))) AS Line3Key,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_city, '')))) AS CityKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_stateorprovince, '')))) AS StateKey,
+        UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(address1_postalcode, ''))), ' ', ''), '-', '')) AS PostalKey,
+        UPPER(LTRIM(RTRIM(ISNULL(address1_country, '')))) AS CountryKey
+    FROM account
+),
+AccountMapRaw AS
+(
+    SELECT dying.accountid AS DyingAccountId, master.accountid AS MasterAccountId
+    FROM NormalizedAccounts dying
+    INNER JOIN NormalizedAccounts master
+        ON dying.ABLKey = master.ABLKey
+        AND dying.Line1Key = master.Line1Key
+        AND dying.Line2Key = master.Line2Key
+        AND dying.Line3Key = master.Line3Key
+        AND dying.CityKey = master.CityKey
+        AND dying.StateKey = master.StateKey
+        AND dying.PostalKey = master.PostalKey
+        AND dying.CountryKey = master.CountryKey
+        AND dying.accountid <> master.accountid
+    WHERE dying.meta_tobecleaned = 1
+        AND ISNULL(master.meta_tobecleaned, 0) = 0
+        AND master.statecode = 0
+        AND dying.ABLKey <> ''
+        AND dying.Line1Key <> ''
+        AND dying.CityKey <> ''
+        AND dying.StateKey <> ''
+        AND dying.PostalKey <> ''
+),
+ValidDyingAccounts AS
+(
+    SELECT DyingAccountId
+    FROM AccountMapRaw
+    GROUP BY DyingAccountId
+    HAVING COUNT(*) = 1
+),
+AccountMap AS
+(
+    SELECT m.*
+    FROM AccountMapRaw m
+    INNER JOIN ValidDyingAccounts v ON m.DyingAccountId = v.DyingAccountId
+)
+
+SELECT 'Sales Orders still on dying Accounts' AS ValidationCheck, COUNT(*) AS RemainingCount
+FROM salesorder so
+INNER JOIN AccountMap m ON so.customerid = m.DyingAccountId
+
+UNION ALL
+
+SELECT 'Invoices still on dying Accounts', COUNT(*)
+FROM invoice i
+INNER JOIN AccountMap m ON i.customerid = m.DyingAccountId
+
+UNION ALL
+
+SELECT 'Quotes still on dying Accounts', COUNT(*)
+FROM quote q
+INNER JOIN AccountMap m ON q.customerid = m.DyingAccountId
+
+UNION ALL
+
+SELECT 'Cases still on dying Accounts', COUNT(*)
+FROM incident c
+INNER JOIN AccountMap m ON c.customerid = m.DyingAccountId
+
+UNION ALL
+
+SELECT 'Opportunities still on dying Accounts', COUNT(*)
+FROM opportunity o
+INNER JOIN AccountMap m ON o.parentaccountid = m.DyingAccountId
+
+UNION ALL
+
+SELECT 'Contacts still on dying Accounts', COUNT(*)
+FROM contact con
+INNER JOIN AccountMap m ON con.parentcustomerid = m.DyingAccountId
+
+UNION ALL
+
+SELECT 'Notes still on dying Accounts', COUNT(*)
+FROM annotation n
+INNER JOIN AccountMap m ON n.objectid = m.DyingAccountId
+
+UNION ALL
+
+SELECT 'Phone Calls still regarding dying Accounts', COUNT(*)
+FROM phonecall p
+INNER JOIN AccountMap m ON p.regardingobjectid = m.DyingAccountId
+
+UNION ALL
+
+SELECT 'Emails still regarding dying Accounts', COUNT(*)
+FROM email e
+INNER JOIN AccountMap m ON e.regardingobjectid = m.DyingAccountId
+
+UNION ALL
+
+SELECT 'Tasks still regarding dying Accounts', COUNT(*)
+FROM task t
+INNER JOIN AccountMap m ON t.regardingobjectid = m.DyingAccountId
+
+UNION ALL
+
+SELECT 'Appointments still regarding dying Accounts', COUNT(*)
+FROM appointment a
+INNER JOIN AccountMap m ON a.regardingobjectid = m.DyingAccountId
+
+UNION ALL
+
+SELECT 'Activity Parties still on dying Accounts', COUNT(*)
+FROM activityparty ap
+INNER JOIN AccountMap m ON ap.partyid = m.DyingAccountId
+
+UNION ALL
+
+SELECT 'SharePoint Document Locations still on dying Accounts', COUNT(*)
+FROM sharepointdocumentlocation s
+INNER JOIN AccountMap m ON s.regardingobjectid = m.DyingAccountId
+
+UNION ALL
+
+SELECT 'Connections Record 1 still on dying Accounts', COUNT(*)
+FROM connection c
+INNER JOIN AccountMap m ON c.record1id = m.DyingAccountId
+
+UNION ALL
+
+SELECT 'Connections Record 2 still on dying Accounts', COUNT(*)
+FROM connection c
+INNER JOIN AccountMap m ON c.record2id = m.DyingAccountId;
+
+
+================================================================================
+Recommended Production Approach
+================================================================================
+
+For production, a safer approach is to create a custom Dataverse mapping table first.
+
+Suggested table:
+----------------
+    meta_accountcleanupmap
+
+Suggested columns:
+------------------
+    meta_dyingaccount       Lookup to Account
+    meta_masteraccount      Lookup to Account
+    meta_ablnumber          Text
+    meta_matchstatus        Choice: Pending, Approved, Ambiguous, No Match, Processed, Failed
+    meta_childrecordsmoved  Yes/No
+    meta_processedon        Date/Time
+    meta_error              Multiline text
+
+Recommended flow:
+-----------------
+1. Populate the mapping table using the matching logic.
+2. Review and approve the mappings.
+3. Move child records only for approved mappings.
+4. Validate child record counts.
+5. Deactivate dying Accounts.
+6. Keep the mapping table as an audit trail.
+
+End of file.
